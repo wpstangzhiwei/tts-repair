@@ -95,22 +95,22 @@ set "RUNTIME_PRODUCT_OK=0"
 set "LANG_OK=0"
 set "LANG_PRODUCT_OK=0"
 set "SAPI_OK=0"
+set "SPEECH_DIR=%CommonProgramFiles%\Microsoft Shared\Speech"
+set "SPEECH_DIR_X86=%CommonProgramFiles(x86)%\Microsoft Shared\Speech"
 
 call :query_product "%RUNTIME_PRODUCT%" RUNTIME_PRODUCT_OK
 call :query_product "%LANG_PRODUCT%" LANG_PRODUCT_OK
 
-rem Functional check: Speech Server v11.0, with and without space.
-reg query "HKLM\SOFTWARE\Microsoft\Speech Server\v11.0" >nul 2>&1 && set "RUNTIME_OK=1"
-if "!RUNTIME_OK!"=="0" reg query "HKLM\SOFTWARE\Wow6432Node\Microsoft\Speech Server\v11.0" >nul 2>&1 && set "RUNTIME_OK=1"
-if "!RUNTIME_OK!"=="0" reg query "HKLM\SOFTWARE\Microsoft\SpeechServer\v11.0" >nul 2>&1 && set "RUNTIME_OK=1"
-if "!RUNTIME_OK!"=="0" reg query "HKLM\SOFTWARE\Wow6432Node\Microsoft\SpeechServer\v11.0" >nul 2>&1 && set "RUNTIME_OK=1"
-if "!RUNTIME_OK!"=="0" if "!RUNTIME_PRODUCT_OK!"=="1" set "RUNTIME_OK=1"
+rem Functional check uses payload files, not leftover ProductCode / empty registry keys.
+if exist "%SPEECH_DIR%\Microsoft.Speech.dll" set "RUNTIME_OK=1"
+if "!RUNTIME_OK!"=="0" if exist "%SPEECH_DIR%\SR\v11.0\spsreng.dll" set "RUNTIME_OK=1"
+if "!RUNTIME_OK!"=="0" if exist "%SPEECH_DIR_X86%\Microsoft.Speech.dll" set "RUNTIME_OK=1"
+if "!RUNTIME_OK!"=="0" if exist "%SPEECH_DIR_X86%\SR\v11.0\spsreng.dll" set "RUNTIME_OK=1"
 
-reg query "HKLM\SOFTWARE\Microsoft\Speech Server\v11.0\Voices\Tokens\TTS_MS_ZH-CN_HUIHUI_11.0" >nul 2>&1 && set "LANG_OK=1"
-if "!LANG_OK!"=="0" reg query "HKLM\SOFTWARE\Wow6432Node\Microsoft\Speech Server\v11.0\Voices\Tokens\TTS_MS_ZH-CN_HUIHUI_11.0" >nul 2>&1 && set "LANG_OK=1"
-if "!LANG_OK!"=="0" reg query "HKLM\SOFTWARE\Microsoft\SpeechServer\v11.0\Voices\Tokens\TTS_MS_ZH-CN_HUIHUI_11.0" >nul 2>&1 && set "LANG_OK=1"
-if "!LANG_OK!"=="0" reg query "HKLM\SOFTWARE\Wow6432Node\Microsoft\SpeechServer\v11.0\Voices\Tokens\TTS_MS_ZH-CN_HUIHUI_11.0" >nul 2>&1 && set "LANG_OK=1"
-if "!LANG_OK!"=="0" if "!LANG_PRODUCT_OK!"=="1" set "LANG_OK=1"
+if exist "%SPEECH_DIR%\Tokens\TTS_MS_ZH-CN_HUIHUI_11.0\HuiHuiT.INI" set "LANG_OK=1"
+if "!LANG_OK!"=="0" if exist "%SPEECH_DIR_X86%\Tokens\TTS_MS_ZH-CN_HUIHUI_11.0\HuiHuiT.INI" set "LANG_OK=1"
+if "!LANG_OK!"=="0" if exist "%SPEECH_DIR%\HuiHuiT.INI" set "LANG_OK=1"
+if "!LANG_OK!"=="0" if exist "%SPEECH_DIR_X86%\HuiHuiT.INI" set "LANG_OK=1"
 
 reg query "HKLM\SOFTWARE\Microsoft\Speech\Voices\Tokens\TTS_MS_ZH-CN_HUIHUI_11.0" >nul 2>&1 && set "SAPI_OK=1"
 if "!SAPI_OK!"=="0" reg query "HKLM\SOFTWARE\Wow6432Node\Microsoft\Speech\Voices\Tokens\TTS_MS_ZH-CN_HUIHUI_11.0" >nul 2>&1 && set "SAPI_OK=1"
@@ -128,7 +128,8 @@ if "%~2"=="1" (
 ) else (
   echo - %~1: MISSING
 )
-if "%~3"=="1" echo   MSI product already registered.
+if "%~3"=="1" if not "%~2"=="1" echo   Leftover MSI registration found. Will repair or reinstall.
+if "%~3"=="1" if "%~2"=="1" echo   MSI product already registered.
 exit /b 0
 
 :ensure_msi
