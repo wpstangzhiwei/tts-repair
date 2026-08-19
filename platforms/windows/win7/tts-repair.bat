@@ -10,7 +10,6 @@ set "LOG_DIR=%SCRIPT_DIR%logs"
 set "RUNTIME_MSI=%RES_DIR%\Microsoft Speech Platform\SpeechPlatformRuntime(x86).msi"
 set "LANG_MSI=%RES_DIR%\Microsoft Speech Platform\Languages\MSSpeech_TTS_zh-CN_HuiHui.msi"
 set "UNIFIER_EXE=%RES_DIR%\SAPI_Unifier\SAPI_Unifier_requires_dot_NET_4.exe"
-set "VC_REDIST_EXE=%RES_DIR%\SAPI_Unifier\VC_redist.x86.exe"
 
 rem ProductCode taken from the bundled MSI Property table.
 set "RUNTIME_PRODUCT={22CB8ED7-DF57-4864-BD04-F63B9CE4B494}"
@@ -34,17 +33,6 @@ call :print_state
 
 echo.
 echo [2/3] Repair...
-call :detect_vcredist
-if "!VCREDIST_OK!"=="1" (
-  echo - VC++ x86 runtime already installed. Skip.
-) else (
-  if exist "%VC_REDIST_EXE%" (
-    call :install_exe "%VC_REDIST_EXE%" "VC++ x86 Runtime" "/q /norestart" || goto :fail
-  ) else (
-    echo - VC_redist.x86.exe not found. Continue without it.
-  )
-)
-
 call :ensure_msi "%RUNTIME_MSI%" "Microsoft Speech Platform Runtime x86" "runtime" "%RUNTIME_PRODUCT%" "!RUNTIME_OK!" || goto :fail
 call :ensure_msi "%LANG_MSI%" "MSSpeech_TTS_zh-CN_HuiHui" "lang" "%LANG_PRODUCT%" "!LANG_OK!" || goto :fail
 
@@ -190,22 +178,6 @@ start "" /wait "%~1"
 set "RC=%ERRORLEVEL%"
 if not "%RC%"=="0" echo [ERROR] SAPI Unifier failed. Exit code: %RC% & exit /b 1
 echo [OK] SAPI Unifier finished.
-exit /b 0
-
-:install_exe
-echo [INSTALL] %~2
-start "" /wait "%~1" %~3
-set "RC=%ERRORLEVEL%"
-if "%RC%"=="0" echo [OK] Installed: %~2 & exit /b 0
-if "%RC%"=="3010" echo [WARN] %~2 installed. Reboot required. & set "REBOOT_REQUIRED=1" & exit /b 0
-if "%RC%"=="1638" echo [OK] %~2 already installed. & exit /b 0
-echo [ERROR] Failed to install: %~2. Exit code: %RC%
-exit /b 1
-
-:detect_vcredist
-set "VCREDIST_OK=0"
-reg query "HKLM\SOFTWARE\Microsoft\VisualStudio\10.0\VC\VCRedist\x86" /v Installed >nul 2>&1 && set "VCREDIST_OK=1"
-if "!VCREDIST_OK!"=="0" reg query "HKLM\SOFTWARE\Wow6432Node\Microsoft\VisualStudio\10.0\VC\VCRedist\x86" /v Installed >nul 2>&1 && set "VCREDIST_OK=1"
 exit /b 0
 
 :query_product
