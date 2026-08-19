@@ -2,29 +2,27 @@
 
 ## 范围
 
-本目录用于存放 Windows 优先的 TTS 问题修复规范、排障说明和实现脚本。
-
-在未发现平台特有问题前，Windows 11 与 Windows 10 走同一套实现。
+本目录存放 Windows 平台的 TTS 修复脚本、资源和说明。
 
 ## 版本策略
 
-- `win10-plus` 作为 Windows 10 与 Windows 11+ 的统一基线目录。  
-- 仅在确认存在 Win11 专属行为差异时，才新增独立的 `win11` 目录。  
+- `win7/`：Windows 7 专用实现（当前已提供修复脚本）。  
+- `win10-plus/`：Windows 10 与 Windows 11+ 共用基线。未发现 Win11 专属差异前，不单独建 `win11/`。  
+
+## 当前状态
+
+| 目录 | 状态 |
+|---|---|
+| [win7](win7/README.md) | 已实现 `tts-repair.bat` |
+| [win10-plus](win10-plus/README.md) | 目录骨架已建，脚本待实现 |
 
 ## 常见问题域
 
-- 语音包安装与可用性不一致。  
-- 编码与区域设置导致的文本发音异常。  
-- 不同引擎之间的 API 调用差异。  
-- 运行时权限与依赖问题。  
-
-## 建议子目录
-
-- `win10-plus/`：Windows 10 与 11+ 共用实现  
-- `scripts/`：自动化与修复脚本  
-- `docs/`：故障案例文档  
-- `samples/`：可复现输入输出样例  
+- Microsoft Speech Platform Runtime / 语音包缺失或残留。  
+- SAPI 与 Speech Platform 语音映射不一致。  
+- 编码、区域设置导致发音异常。  
+- 需要管理员权限才能安装 MSI。  
 
 ## 多语言要求
 
-本目录下所有文本文档建议至少维护中文与英文版本，并放在对应语言目录中。
+文本文档放在 `docs/i18n/<locale>/platforms/windows/`，代码目录中的 README 仅作语言入口。  

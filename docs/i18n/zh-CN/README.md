@@ -2,29 +2,47 @@
 
 ## 项目目标
 
-构建一个跨平台的文本转语音（TTS）修复工具集，并确保所有文本资产都具备多语言处理能力。
+构建一个跨平台的文本转语音（TTS）修复工具集。所有文本文档按语言分目录维护（至少中文、英文）。
 
-## 当前优先级
+## 当前进度
 
-1. 优先处理 Windows 平台。  
-2. 为 Windows TTS 引擎建立并验证修复流程。  
-3. 后续将同一架构扩展到其他平台。  
+1. 优先 Windows。  
+2. **Windows 7 修复脚本已可用。**  
+3. Windows 10 / 11+ 共用基线目录已建好，脚本尚未实现。  
+4. 其他平台后续扩展。  
 
 ## 目录结构
 
 ```text
-platforms/
-  windows/
-    README.md
-    win10-plus/
-      README.md
+LICENSE
+README.md
+docs/i18n/
+  zh-CN/
+  en-US/
+platforms/windows/
+  README.md
+  win7/
+    tts-repair.bat
+    resources/
+  win10-plus/
+    scripts/
+    docs/
+    samples/
 ```
+
+## 快速使用（Windows 7）
+
+1. 以管理员身份运行 `platforms/windows/win7/tts-repair.bat`。  
+2. 脚本会检查 → 修复 → 复检 Microsoft Speech Platform Runtime、HuiHui 语音包、SAPI 映射。  
+3. 需要已安装 .NET Framework 4（SAPI Unifier 依赖它）。  
+4. 详细说明见 [Windows 7](platforms/windows/win7/README.md)。  
+
+## 许可证
+
+本项目采用 [GPL-3.0-only](../../../LICENSE)。  
+使用、引用并发布衍生作品时，必须按 GPLv3 公开对应源代码。
 
 ## 多语言规则
 
-- 所有文本文件都应包含多语言内容（至少中文与英文）。  
-- 新文档应保持按语言分目录维护。  
-
-## 下一步
-
-在 `platforms/windows/win10-plus` 中定义 Windows 专属问题分类与修复脚本（Windows 10 与 Windows 11+ 共用）。
+- 正文文档放在 `docs/i18n/<locale>/`。  
+- 代码目录中的 `README.md` 只作为语言入口，使用可点击链接跳转。  
