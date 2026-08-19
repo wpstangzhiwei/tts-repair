@@ -29,7 +29,7 @@ echo [2/3] Repair...
 if "%RUNTIME_OK%"=="1" (
   echo - Runtime already installed. Skip.
 ) else (
-  call :install_msi "%RUNTIME_MSI%" "Microsoft Speech Platform Runtime (x86)" || goto :fail
+  call :install_msi "%RUNTIME_MSI%" "Microsoft Speech Platform Runtime x86" || goto :fail
 )
 
 if "%LANG_OK%"=="1" (
@@ -126,10 +126,8 @@ exit /b 0
 :install_msi
 echo [INSTALL] %~2
 msiexec /i "%~1" /qn /norestart
-if not "%ERRORLEVEL%"=="0" (
-  echo [ERROR] Failed to install: %~2 ^(exit code: %ERRORLEVEL%^)
-  exit /b 1
-)
+set "RC=%ERRORLEVEL%"
+if not "%RC%"=="0" echo [ERROR] Failed to install: %~2. Exit code: %RC% & exit /b 1
 echo [OK] Installed: %~2
 exit /b 0
 
@@ -137,10 +135,8 @@ exit /b 0
 echo [RUN] SAPI Unifier
 echo Launching: "%~1"
 start "" /wait "%~1"
-if not "%ERRORLEVEL%"=="0" (
-  echo [ERROR] SAPI Unifier failed ^(exit code: %ERRORLEVEL%^)
-  exit /b 1
-)
+set "RC=%ERRORLEVEL%"
+if not "%RC%"=="0" echo [ERROR] SAPI Unifier failed. Exit code: %RC% & exit /b 1
 echo [OK] SAPI Unifier finished.
 exit /b 0
 
