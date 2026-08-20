@@ -1,0 +1,3 @@
+# Repair logs and on-demand language-pack cache.
+platforms/windows/win7/logs/
+platforms/windows/win7/resources/Microsoft Speech Platform/Languages/

@@ -6,7 +6,7 @@
 
 ## 如何运行
 
-以管理员身份运行 `platforms/windows/win7/tts-repair.bat`，可带语言参数：
+以管理员身份运行 `platforms/windows/win7/tts-repair.bat`：
 
 ```bat
 tts-repair.bat
@@ -20,13 +20,15 @@ tts-repair.bat ja-JP sr
 tts-repair.bat ja-JP all
 ```
 
-- 无参数：默认安装 `zh-CN` 的 TTS。  
-- `/list`：列出 `Languages` 目录中已有的 TTS / SR 包。  
+- 无参数：默认安装 `zh-CN` TTS（HuiHui）。语言 MSI 从 langpacks 仓库下载，并缓存在 `Languages/`。  
+- `/list`：列出可用 TTS / SR；`[local]` 表示磁盘上已有 MSI。  
 - `locale`：安装该语言全部 TTS 语音（如 `en-US` 会装 Helen 和 ZiraPro）。  
 - `locale 语音名`：只装指定 TTS 语音。  
 - `locale sr`：只装该语言识别包。  
 - `locale all`：TTS + SR。  
-- `/all`：安装目录中全部语言包。  
+- `/all`：安装清单中全部语言包。  
+
+语言 MSI 不在主仓。脚本会按所选语言从 [tts-repair-win7-langpacks](https://github.com/wpstangzhiwei/tts-repair-win7-langpacks.git) 下载对应文件到 `Languages/` 并保留作缓存，再安装。若本地已有 `langpacks` 子模块，则直接用其中的文件。
 
 安装日志写在 `platforms/windows/win7/logs/`。
 
@@ -35,8 +37,9 @@ tts-repair.bat ja-JP all
 脚本按顺序处理：
 
 1. 安装或修复 `resources/Microsoft Speech Platform/SpeechPlatformRuntime(x86).msi`  
-2. 安装或修复所选 `resources/Microsoft Speech Platform/Languages/MSSpeech_*.msi`  
-3. 若所选 TTS 的 SAPI 映射缺失，则运行 `resources/SAPI_Unifier/SAPI_Unifier_requires_dot_NET_4.exe`  
+2. 解析所选语言包：本地缓存 `Languages/` → 本地 `langpacks/` → 从 langpacks 仓库下载到 `Languages/`（缓存）  
+3. 安装或修复所选 `MSSpeech_*.msi`  
+4. 若所选 TTS 的 SAPI 映射缺失，则运行 `resources/SAPI_Unifier/SAPI_Unifier_requires_dot_NET_4.exe`  
 
 SAPI Unifier 是 GUI 程序，依赖 **.NET Framework 4**，**不依赖** `VC_redist.x86.exe`。映射在窗口弹出前已完成，脚本会自动关闭窗口，无需点击 Exit。
 
@@ -58,11 +61,12 @@ win7/
   tts-repair.bat
   scripts/
     auto-close-sapi-unifier.vbs
+    msi-productcode.vbs
   resources/
     Microsoft Speech Platform/
       SpeechPlatformRuntime(x86).msi
-      Languages/MSSpeech_TTS_*.msi
-      Languages/MSSpeech_SR_*.msi
+      Languages/                                # download cache (gitignored)
+      langpacks/                                # git submodule
     SAPI_Unifier/
       SAPI_Unifier_requires_dot_NET_4.exe
 ```
