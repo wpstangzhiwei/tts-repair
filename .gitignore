@@ -1,3 +1,5 @@
 # Repair logs and on-demand language-pack cache.
+# Keep the default zh-CN TTS MSI tracked; ignore other downloaded packs.
 platforms/windows/win7/logs/
-platforms/windows/win7/resources/Microsoft Speech Platform/Languages/
+platforms/windows/win7/resources/Microsoft Speech Platform/Languages/*
+!platforms/windows/win7/resources/Microsoft Speech Platform/Languages/MSSpeech_TTS_zh-CN_HuiHui.msi

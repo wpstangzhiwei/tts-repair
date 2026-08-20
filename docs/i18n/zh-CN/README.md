@@ -7,7 +7,7 @@
 ## 当前进度
 
 1. 优先 Windows。  
-2. **Windows 7 修复脚本已可用。** 默认装 zh-CN HuiHui；语言包由 `tts-repair.bat` 从 [tts-repair-win7-langpacks](https://github.com/wpstangzhiwei/tts-repair-win7-langpacks.git) 按需下载并缓存在本地。  
+2. **Windows 7 修复脚本已可用。** 默认装 zh-CN HuiHui（MSI 随仓库附带，无需下载）。其他语言可用 `/help`、`/menu` 或 `locale` 参数选择；缺失的语言包才从 [tts-repair-win7-langpacks](https://github.com/wpstangzhiwei/tts-repair-win7-langpacks.git) 按需下载并缓存。  
 3. Windows 10 / 11+ 共用基线目录已建好，脚本尚未实现。  
 4. 其他平台后续扩展。  
 
