@@ -18,7 +18,7 @@
 2. 安装或修复 `resources/Microsoft Speech Platform/Languages/MSSpeech_TTS_zh-CN_HuiHui.msi`  
 3. 若 SAPI 映射缺失，则运行 `resources/SAPI_Unifier/SAPI_Unifier_requires_dot_NET_4.exe`  
 
-SAPI Unifier 是 GUI 程序，运行时可能需要在窗口中确认。它依赖 **.NET Framework 4**，**不依赖** `VC_redist.x86.exe`。
+SAPI Unifier 是 GUI 程序，依赖 **.NET Framework 4**，**不依赖** `VC_redist.x86.exe`。映射在窗口弹出前已完成，脚本会自动关闭窗口，无需点击 Exit。
 
 ## 如何判断“已安装”
 

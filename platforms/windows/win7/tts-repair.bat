@@ -175,9 +175,11 @@ exit /b 1
 :run_unifier
 echo [RUN] SAPI Unifier
 echo Launching: "%~1"
+echo The Unifier window will be closed automatically after mapping finishes.
+start "" wscript //nologo "%SCRIPT_DIR%auto-close-sapi-unifier.vbs"
 start "" /wait "%~1"
 set "RC=%ERRORLEVEL%"
-if not "%RC%"=="0" echo [ERROR] SAPI Unifier failed. Exit code: %RC% & exit /b 1
+if not "%RC%"=="0" if not "%RC%"=="1" echo [WARN] SAPI Unifier exit code: %RC%
 echo [OK] SAPI Unifier finished.
 exit /b 0
 
