@@ -42,6 +42,8 @@ ProductCodes:
 ```text
 win7/
   tts-repair.bat
+  scripts/
+    auto-close-sapi-unifier.vbs
   resources/
     Microsoft Speech Platform/
       SpeechPlatformRuntime(x86).msi

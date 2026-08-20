@@ -7,6 +7,7 @@ title Win7 TTS Repair
 set "SCRIPT_DIR=%~dp0"
 set "RES_DIR=%SCRIPT_DIR%resources"
 set "LOG_DIR=%SCRIPT_DIR%logs"
+set "CLOSE_UNIFIER_VBS=%SCRIPT_DIR%scripts\auto-close-sapi-unifier.vbs"
 set "RUNTIME_MSI=%RES_DIR%\Microsoft Speech Platform\SpeechPlatformRuntime(x86).msi"
 set "LANG_MSI=%RES_DIR%\Microsoft Speech Platform\Languages\MSSpeech_TTS_zh-CN_HuiHui.msi"
 set "UNIFIER_EXE=%RES_DIR%\SAPI_Unifier\SAPI_Unifier_requires_dot_NET_4.exe"
@@ -176,7 +177,7 @@ exit /b 1
 echo [RUN] SAPI Unifier
 echo Launching: "%~1"
 echo The Unifier window will be closed automatically after mapping finishes.
-start "" wscript //nologo "%SCRIPT_DIR%auto-close-sapi-unifier.vbs"
+start "" wscript //nologo "%CLOSE_UNIFIER_VBS%"
 start "" /wait "%~1"
 set "RC=%ERRORLEVEL%"
 if not "%RC%"=="0" if not "%RC%"=="1" echo [WARN] SAPI Unifier exit code: %RC%
