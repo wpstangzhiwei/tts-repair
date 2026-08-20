@@ -7,48 +7,93 @@ title Win7 TTS Repair
 set "SCRIPT_DIR=%~dp0"
 set "RES_DIR=%SCRIPT_DIR%resources"
 set "LOG_DIR=%SCRIPT_DIR%logs"
+set "LANG_DIR=%RES_DIR%\Microsoft Speech Platform\Languages"
 set "CLOSE_UNIFIER_VBS=%SCRIPT_DIR%scripts\auto-close-sapi-unifier.vbs"
+set "MSI_CODE_VBS=%SCRIPT_DIR%scripts\msi-productcode.vbs"
 set "RUNTIME_MSI=%RES_DIR%\Microsoft Speech Platform\SpeechPlatformRuntime(x86).msi"
-set "LANG_MSI=%RES_DIR%\Microsoft Speech Platform\Languages\MSSpeech_TTS_zh-CN_HuiHui.msi"
 set "UNIFIER_EXE=%RES_DIR%\SAPI_Unifier\SAPI_Unifier_requires_dot_NET_4.exe"
-
-rem ProductCode taken from the bundled MSI Property table.
 set "RUNTIME_PRODUCT={22CB8ED7-DF57-4864-BD04-F63B9CE4B494}"
-set "LANG_PRODUCT={44B3785F-9F8B-46A9-AD46-21B7AC49D086}"
+
+set "SPEECH_DIR=%CommonProgramFiles%\Microsoft Shared\Speech"
+set "SPEECH_DIR_X86=%CommonProgramFiles(x86)%\Microsoft Shared\Speech"
+
+set "WANT_LOCALE="
+set "WANT_VOICE="
+set "WANT_KIND=tts"
+set "DO_LIST=0"
+set "DO_ALL=0"
+set "NEED_UNIFIER=0"
+set "SEL_N=0"
+set "VERIFY_FAIL=0"
 
 if not exist "%LOG_DIR%" mkdir "%LOG_DIR%" >nul 2>&1
+
+call :parse_args %*
+if errorlevel 1 exit /b 1
+if "!DO_LIST!"=="1" (
+  call :list_packs
+  exit /b 0
+)
+
+if "!DO_ALL!"=="0" if "!WANT_LOCALE!"=="" set "WANT_LOCALE=zh-CN"
 
 echo ============================================================
 echo Win7 TTS Repair - Check ^> Repair ^> Verify
 echo ============================================================
 echo Script Path: %SCRIPT_DIR%
 echo Resource Path: %RES_DIR%
+if "!DO_ALL!"=="1" (
+  echo Target: ALL language packs
+) else (
+  echo Target locale: !WANT_LOCALE!
+  if not "!WANT_VOICE!"=="" echo Target voice: !WANT_VOICE!
+  echo Target kind: !WANT_KIND!
+)
 echo.
 
 call :require_admin || goto :fail
 call :check_resources || goto :fail
+call :select_packs || goto :fail
 
 echo [1/3] Initial Check...
-call :detect_state
-call :print_state
+call :detect_runtime
+call :print_item "Speech Runtime" "!RUNTIME_OK!" "!RUNTIME_PRODUCT_OK!"
+call :print_selected_state
 
 echo.
 echo [2/3] Repair...
 call :ensure_msi "%RUNTIME_MSI%" "Microsoft Speech Platform Runtime x86" "runtime" "%RUNTIME_PRODUCT%" "!RUNTIME_OK!" || goto :fail
-call :ensure_msi "%LANG_MSI%" "MSSpeech_TTS_zh-CN_HuiHui" "lang" "%LANG_PRODUCT%" "!LANG_OK!" || goto :fail
 
-if "!SAPI_OK!"=="1" (
-  echo - SAPI Unifier result already present. Skip.
+for /L %%I in (1,1,!SEL_N!) do (
+  call :ensure_msi "!SEL_MSI_%%I!" "!SEL_NAME_%%I!" "!SEL_TAG_%%I!" "!SEL_CODE_%%I!" "!SEL_OK_%%I!" || goto :fail
+)
+
+if "!NEED_UNIFIER!"=="1" (
+  set "ANY_SAPI_MISSING=0"
+  for /L %%I in (1,1,!SEL_N!) do (
+    if /I "!SEL_KIND_%%I!"=="tts" if not "!SEL_SAPI_%%I!"=="1" set "ANY_SAPI_MISSING=1"
+  )
+  if "!ANY_SAPI_MISSING!"=="1" (
+    call :run_unifier "%UNIFIER_EXE%" || goto :fail
+  ) else (
+    echo - SAPI Unifier mapping already present for selected TTS. Skip.
+  )
 ) else (
-  call :run_unifier "%UNIFIER_EXE%" || goto :fail
+  echo - SR-only repair. SAPI Unifier skipped.
 )
 
 echo.
 echo [3/3] Verify...
-call :detect_state
-call :print_state
+call :detect_runtime
+call :print_item "Speech Runtime" "!RUNTIME_OK!" "!RUNTIME_PRODUCT_OK!"
+if not "!RUNTIME_OK!"=="1" set "VERIFY_FAIL=1"
+call :print_selected_state
+for /L %%I in (1,1,!SEL_N!) do (
+  if not "!SEL_OK_%%I!"=="1" set "VERIFY_FAIL=1"
+  if /I "!SEL_KIND_%%I!"=="tts" if not "!SEL_SAPI_%%I!"=="1" set "VERIFY_FAIL=1"
+)
 
-if "!RUNTIME_OK!"=="1" if "!LANG_OK!"=="1" if "!SAPI_OK!"=="1" (
+if "!VERIFY_FAIL!"=="0" (
   echo.
   echo [SUCCESS] Win7 TTS repair completed.
   echo You can now test TTS output in your target application.
@@ -59,6 +104,216 @@ echo.
 echo [ERROR] Repair finished but verification failed.
 echo Please review the logs above and run this script again as Administrator.
 exit /b 1
+
+:parse_args
+if "%~1"=="" exit /b 0
+if /I "%~1"=="/?" goto :usage
+if /I "%~1"=="-?" goto :usage
+if /I "%~1"=="/help" goto :usage
+if /I "%~1"=="-help" goto :usage
+if /I "%~1"=="/list" set "DO_LIST=1" & shift & goto :parse_args
+if /I "%~1"=="-list" set "DO_LIST=1" & shift & goto :parse_args
+if /I "%~1"=="/all" set "DO_ALL=1" & set "WANT_KIND=all" & shift & goto :parse_args
+if /I "%~1"=="-all" set "DO_ALL=1" & set "WANT_KIND=all" & shift & goto :parse_args
+if /I "%~1"=="list" set "DO_LIST=1" & shift & goto :parse_args
+if /I "%~1"=="all" (
+  if "!WANT_LOCALE!"=="" (
+    set "DO_ALL=1"
+  ) else (
+    set "WANT_KIND=all"
+  )
+  shift
+  goto :parse_args
+)
+if /I "%~1"=="tts" set "WANT_KIND=tts" & shift & goto :parse_args
+if /I "%~1"=="sr" set "WANT_KIND=sr" & shift & goto :parse_args
+if "!WANT_LOCALE!"=="" (
+  set "WANT_LOCALE=%~1"
+  shift
+  goto :parse_args
+)
+if "!WANT_VOICE!"=="" (
+  set "WANT_VOICE=%~1"
+  shift
+  goto :parse_args
+)
+echo [ERROR] Unknown argument: %~1
+goto :usage
+
+:usage
+echo Usage:
+echo   tts-repair.bat
+echo   tts-repair.bat /list
+echo   tts-repair.bat /all
+echo   tts-repair.bat zh-CN
+echo   tts-repair.bat zh-CN HuiHui
+echo   tts-repair.bat en-US
+echo   tts-repair.bat en-US ZiraPro
+echo   tts-repair.bat ja-JP sr
+echo   tts-repair.bat ja-JP all
+echo.
+echo Default without arguments: zh-CN TTS.
+echo Kind: tts  sr  all
+call :list_packs
+exit /b 1
+
+:list_packs
+echo Available packs in:
+echo   %LANG_DIR%
+echo.
+echo TTS:
+for %%F in ("%LANG_DIR%\MSSpeech_TTS_*.msi") do (
+  set "FN=%%~nF"
+  set "REST=!FN:MSSpeech_TTS_=!"
+  for /f "tokens=1* delims=_" %%A in ("!REST!") do echo   %%A  %%B
+)
+echo.
+echo SR:
+for %%F in ("%LANG_DIR%\MSSpeech_SR_*.msi") do (
+  set "FN=%%~nF"
+  set "REST=!FN:MSSpeech_SR_=!"
+  for /f "tokens=1* delims=_" %%A in ("!REST!") do echo   %%A  %%B
+)
+echo.
+exit /b 0
+
+:select_packs
+if not exist "%LANG_DIR%" (
+  echo [ERROR] Language directory not found: "%LANG_DIR%"
+  exit /b 1
+)
+if "!DO_ALL!"=="1" if /I not "!WANT_KIND!"=="sr" (
+  for %%F in ("%LANG_DIR%\MSSpeech_TTS_*.msi") do call :maybe_add_tts "%%~fF"
+)
+if "!DO_ALL!"=="1" if /I not "!WANT_KIND!"=="tts" (
+  for %%F in ("%LANG_DIR%\MSSpeech_SR_*.msi") do call :maybe_add_sr "%%~fF"
+)
+if "!DO_ALL!"=="0" if /I not "!WANT_KIND!"=="sr" (
+  for %%F in ("%LANG_DIR%\MSSpeech_TTS_*.msi") do call :maybe_add_tts "%%~fF"
+)
+if "!DO_ALL!"=="0" if /I not "!WANT_KIND!"=="tts" (
+  for %%F in ("%LANG_DIR%\MSSpeech_SR_*.msi") do call :maybe_add_sr "%%~fF"
+)
+if "!SEL_N!"=="0" (
+  echo [ERROR] No matching language pack found.
+  echo Use /list to see available locales and voices.
+  exit /b 1
+)
+echo [OK] Selected !SEL_N! language pack(s).
+exit /b 0
+
+:maybe_add_tts
+set "FP=%~1"
+set "FN=%~n1"
+set "REST=!FN:MSSpeech_TTS_=!"
+for /f "tokens=1* delims=_" %%A in ("!REST!") do (
+  set "LOC=%%A"
+  set "VOICE=%%B"
+)
+if "!DO_ALL!"=="0" if /I not "!LOC!"=="!WANT_LOCALE!" exit /b 0
+if not "!WANT_VOICE!"=="" if /I not "!VOICE!"=="!WANT_VOICE!" exit /b 0
+set /a SEL_N+=1
+set "TOK=TTS_MS_!LOC!_!VOICE!_11.0"
+set "SEL_MSI_!SEL_N!=!FP!"
+set "SEL_KIND_!SEL_N!=tts"
+set "SEL_NAME_!SEL_N!=!FN!"
+set "SEL_TAG_!SEL_N!=tts-!LOC!-!VOICE!"
+set "SEL_TOKEN_!SEL_N!=!TOK!"
+set "NEED_UNIFIER=1"
+call :read_product_code "!FP!" "SEL_CODE_!SEL_N!"
+call :detect_tts_token "!TOK!" "SEL_OK_!SEL_N!" "SEL_SAPI_!SEL_N!" "SEL_PRODUCT_OK_!SEL_N!" "!SEL_CODE_%SEL_N%!"
+exit /b 0
+
+:maybe_add_sr
+set "FP=%~1"
+set "FN=%~n1"
+set "REST=!FN:MSSpeech_SR_=!"
+for /f "tokens=1* delims=_" %%A in ("!REST!") do (
+  set "LOC=%%A"
+  set "VOICE=%%B"
+)
+if "!DO_ALL!"=="0" if /I not "!LOC!"=="!WANT_LOCALE!" exit /b 0
+set /a SEL_N+=1
+set "TOK=SR_MS_!LOC!_!VOICE!_11.0"
+set "SEL_MSI_!SEL_N!=!FP!"
+set "SEL_KIND_!SEL_N!=sr"
+set "SEL_NAME_!SEL_N!=!FN!"
+set "SEL_TAG_!SEL_N!=sr-!LOC!-!VOICE!"
+set "SEL_TOKEN_!SEL_N!=!TOK!"
+set "SEL_SAPI_!SEL_N!=1"
+call :read_product_code "!FP!" "SEL_CODE_!SEL_N!"
+call :detect_sr_token "!TOK!" "SEL_OK_!SEL_N!" "SEL_PRODUCT_OK_!SEL_N!" "!SEL_CODE_%SEL_N%!"
+exit /b 0
+
+:read_product_code
+set "%~2="
+if not exist "%MSI_CODE_VBS%" exit /b 0
+for /f "usebackq delims=" %%C in (`cscript //nologo "%MSI_CODE_VBS%" "%~1"`) do set "%~2=%%C"
+exit /b 0
+
+:detect_runtime
+set "RUNTIME_OK=0"
+set "RUNTIME_PRODUCT_OK=0"
+call :query_product "%RUNTIME_PRODUCT%" RUNTIME_PRODUCT_OK
+if exist "%SPEECH_DIR%\Microsoft.Speech.dll" set "RUNTIME_OK=1"
+if "!RUNTIME_OK!"=="0" if exist "%SPEECH_DIR%\SR\v11.0\spsreng.dll" set "RUNTIME_OK=1"
+if "!RUNTIME_OK!"=="0" if exist "%SPEECH_DIR_X86%\Microsoft.Speech.dll" set "RUNTIME_OK=1"
+if "!RUNTIME_OK!"=="0" if exist "%SPEECH_DIR_X86%\SR\v11.0\spsreng.dll" set "RUNTIME_OK=1"
+exit /b 0
+
+:detect_tts_token
+set "TOKEN=%~1"
+set "OKVAR=%~2"
+set "SAPIVAR=%~3"
+set "PRODVAR=%~4"
+set "CODE=%~5"
+set "%OKVAR%=0"
+set "%SAPIVAR%=0"
+set "%PRODVAR%=0"
+call :query_product "%CODE%" %PRODVAR%
+reg query "HKLM\SOFTWARE\Microsoft\Speech Server\v11.0\Voices\Tokens\%TOKEN%" >nul 2>&1 && set "%OKVAR%=1"
+if "!%OKVAR%!"=="0" reg query "HKLM\SOFTWARE\Wow6432Node\Microsoft\Speech Server\v11.0\Voices\Tokens\%TOKEN%" >nul 2>&1 && set "%OKVAR%=1"
+if "!%OKVAR%!"=="0" if exist "%SPEECH_DIR%\Tokens\%TOKEN%\" set "%OKVAR%=1"
+if "!%OKVAR%!"=="0" if exist "%SPEECH_DIR_X86%\Tokens\%TOKEN%\" set "%OKVAR%=1"
+reg query "HKLM\SOFTWARE\Microsoft\Speech\Voices\Tokens\%TOKEN%" >nul 2>&1 && set "%SAPIVAR%=1"
+if "!%SAPIVAR%!"=="0" reg query "HKLM\SOFTWARE\Wow6432Node\Microsoft\Speech\Voices\Tokens\%TOKEN%" >nul 2>&1 && set "%SAPIVAR%=1"
+if "!%SAPIVAR%!"=="0" reg query "HKLM\SOFTWARE\Microsoft\Speech\Voices\Tokens\%TOKEN%" /reg:32 >nul 2>&1 && set "%SAPIVAR%=1"
+if "!%SAPIVAR%!"=="0" reg query "HKLM\SOFTWARE\Microsoft\Speech\Voices\Tokens\%TOKEN%" /reg:64 >nul 2>&1 && set "%SAPIVAR%=1"
+exit /b 0
+
+:detect_sr_token
+set "TOKEN=%~1"
+set "OKVAR=%~2"
+set "PRODVAR=%~3"
+set "CODE=%~4"
+set "%OKVAR%=0"
+set "%PRODVAR%=0"
+call :query_product "%CODE%" %PRODVAR%
+reg query "HKLM\SOFTWARE\Microsoft\Speech Server\v11.0\Recognizers\Tokens\%TOKEN%" >nul 2>&1 && set "%OKVAR%=1"
+if "!%OKVAR%!"=="0" reg query "HKLM\SOFTWARE\Wow6432Node\Microsoft\Speech Server\v11.0\Recognizers\Tokens\%TOKEN%" >nul 2>&1 && set "%OKVAR%=1"
+exit /b 0
+
+:print_selected_state
+for /L %%I in (1,1,!SEL_N!) do (
+  call :detect_one %%I
+  if /I "!SEL_KIND_%%I!"=="tts" (
+    call :print_item "!SEL_NAME_%%I!" "!SEL_OK_%%I!" "!SEL_PRODUCT_OK_%%I!"
+    call :print_item "SAPI mapping !SEL_TOKEN_%%I!" "!SEL_SAPI_%%I!" ""
+  ) else (
+    call :print_item "!SEL_NAME_%%I!" "!SEL_OK_%%I!" "!SEL_PRODUCT_OK_%%I!"
+  )
+)
+exit /b 0
+
+:detect_one
+set "I=%~1"
+if /I "!SEL_KIND_%I%!"=="tts" (
+  call :detect_tts_token "!SEL_TOKEN_%I%!" "SEL_OK_%I%" "SEL_SAPI_%I%" "SEL_PRODUCT_OK_%I%" "!SEL_CODE_%I%!"
+) else (
+  call :detect_sr_token "!SEL_TOKEN_%I%!" "SEL_OK_%I%" "SEL_PRODUCT_OK_%I%" "!SEL_CODE_%I%!"
+  set "SEL_SAPI_%I%=1"
+)
+exit /b 0
 
 :require_admin
 net session >nul 2>&1
@@ -79,48 +334,15 @@ if not exist "%RUNTIME_MSI%" (
   echo [ERROR] Missing file: "%RUNTIME_MSI%"
   exit /b 1
 )
-if not exist "%LANG_MSI%" (
-  echo [ERROR] Missing file: "%LANG_MSI%"
-  exit /b 1
-)
 if not exist "%UNIFIER_EXE%" (
   echo [ERROR] Missing file: "%UNIFIER_EXE%"
   exit /b 1
 )
+if not exist "%LANG_DIR%" (
+  echo [ERROR] Language directory not found: "%LANG_DIR%"
+  exit /b 1
+)
 echo [OK] Required resource files are present.
-exit /b 0
-
-:detect_state
-set "RUNTIME_OK=0"
-set "RUNTIME_PRODUCT_OK=0"
-set "LANG_OK=0"
-set "LANG_PRODUCT_OK=0"
-set "SAPI_OK=0"
-set "SPEECH_DIR=%CommonProgramFiles%\Microsoft Shared\Speech"
-set "SPEECH_DIR_X86=%CommonProgramFiles(x86)%\Microsoft Shared\Speech"
-
-call :query_product "%RUNTIME_PRODUCT%" RUNTIME_PRODUCT_OK
-call :query_product "%LANG_PRODUCT%" LANG_PRODUCT_OK
-
-rem Functional check uses payload files, not leftover ProductCode / empty registry keys.
-if exist "%SPEECH_DIR%\Microsoft.Speech.dll" set "RUNTIME_OK=1"
-if "!RUNTIME_OK!"=="0" if exist "%SPEECH_DIR%\SR\v11.0\spsreng.dll" set "RUNTIME_OK=1"
-if "!RUNTIME_OK!"=="0" if exist "%SPEECH_DIR_X86%\Microsoft.Speech.dll" set "RUNTIME_OK=1"
-if "!RUNTIME_OK!"=="0" if exist "%SPEECH_DIR_X86%\SR\v11.0\spsreng.dll" set "RUNTIME_OK=1"
-
-if exist "%SPEECH_DIR%\Tokens\TTS_MS_ZH-CN_HUIHUI_11.0\HuiHuiT.INI" set "LANG_OK=1"
-if "!LANG_OK!"=="0" if exist "%SPEECH_DIR_X86%\Tokens\TTS_MS_ZH-CN_HUIHUI_11.0\HuiHuiT.INI" set "LANG_OK=1"
-if "!LANG_OK!"=="0" if exist "%SPEECH_DIR%\HuiHuiT.INI" set "LANG_OK=1"
-if "!LANG_OK!"=="0" if exist "%SPEECH_DIR_X86%\HuiHuiT.INI" set "LANG_OK=1"
-
-reg query "HKLM\SOFTWARE\Microsoft\Speech\Voices\Tokens\TTS_MS_ZH-CN_HUIHUI_11.0" >nul 2>&1 && set "SAPI_OK=1"
-if "!SAPI_OK!"=="0" reg query "HKLM\SOFTWARE\Wow6432Node\Microsoft\Speech\Voices\Tokens\TTS_MS_ZH-CN_HUIHUI_11.0" >nul 2>&1 && set "SAPI_OK=1"
-exit /b 0
-
-:print_state
-call :print_item "Speech Runtime" "!RUNTIME_OK!" "!RUNTIME_PRODUCT_OK!"
-call :print_item "zh-CN HuiHui Language Pack" "!LANG_OK!" "!LANG_PRODUCT_OK!"
-call :print_item "SAPI Unifier Mapping" "!SAPI_OK!" ""
 exit /b 0
 
 :print_item
@@ -186,6 +408,7 @@ exit /b 0
 
 :query_product
 set "%~2=0"
+if "%~1"=="" exit /b 0
 reg query "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\%~1" >nul 2>&1
 if "%ERRORLEVEL%"=="0" set "%~2=1" & exit /b 0
 reg query "HKLM\SOFTWARE\Wow6432Node\Microsoft\Windows\CurrentVersion\Uninstall\%~1" >nul 2>&1
