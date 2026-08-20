@@ -20,7 +20,7 @@ tts-repair.bat ja-JP sr
 tts-repair.bat ja-JP all
 ```
 
-- No arguments: install `zh-CN` TTS (HuiHui). Language MSIs are downloaded from the langpacks repo and cached in `Languages/`.  
+- No arguments: install `zh-CN` TTS (HuiHui). Language MSIs are downloaded from the Langpacks repo and cached in `Languages/`.  
 - `/list`: list available TTS / SR packs; `[local]` means the MSI is already on disk.  
 - `locale`: install all TTS voices for that locale (for example `en-US` installs Helen and ZiraPro).  
 - `locale VoiceName`: install one TTS voice.  
@@ -28,7 +28,7 @@ tts-repair.bat ja-JP all
 - `locale all`: TTS + SR.  
 - `/all`: install every pack in the catalog.  
 
-Language MSIs are not in the main repo. The script downloads the selected file from [tts-repair-win7-langpacks](https://github.com/wpstangzhiwei/tts-repair-win7-langpacks.git) into `Languages/` (kept as cache), then installs it. If the `langpacks` submodule is already present locally, that copy is used.
+Language MSIs are not in the main repo. The script downloads the selected file from [tts-repair-win7-langpacks](https://github.com/wpstangzhiwei/tts-repair-win7-langpacks.git) into `Languages/` (kept as cache), then installs it. If the `Langpacks` submodule is already present locally, that copy is used.
 
 Installer logs are written to `platforms/windows/win7/logs/`.
 
@@ -37,7 +37,7 @@ Installer logs are written to `platforms/windows/win7/logs/`.
 The script handles these in order:
 
 1. Install or repair `resources/Microsoft Speech Platform/SpeechPlatformRuntime(x86).msi`  
-2. Resolve the selected language MSI: local cache `Languages/` → local `langpacks/` → download from the langpacks repo into `Languages/` (cache)  
+2. Resolve the selected language MSI: local cache `Languages/` → local `Langpacks/` → download from the Langpacks repo into `Languages/` (cache)  
 3. Install or repair the selected `MSSpeech_*.msi`  
 4. If SAPI mapping is missing for a selected TTS voice, run `resources/SAPI_Unifier/SAPI_Unifier_requires_dot_NET_4.exe`  
 
@@ -66,7 +66,7 @@ win7/
     Microsoft Speech Platform/
       SpeechPlatformRuntime(x86).msi
       Languages/                                # download cache (gitignored)
-      langpacks/                                # git submodule
+      Langpacks/                                # git submodule
     SAPI_Unifier/
       SAPI_Unifier_requires_dot_NET_4.exe
 ```
