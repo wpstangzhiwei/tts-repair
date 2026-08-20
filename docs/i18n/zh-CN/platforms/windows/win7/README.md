@@ -9,26 +9,31 @@
 以管理员身份运行 `platforms/windows/win7/tts-repair.bat`：
 
 ```bat
-tts-repair.bat
+tts-repair.bat /help
 tts-repair.bat /list
-tts-repair.bat /all
+tts-repair.bat /menu
+tts-repair.bat
+tts-repair.bat /lang zh-CN
 tts-repair.bat zh-CN
 tts-repair.bat zh-CN HuiHui
 tts-repair.bat en-US
 tts-repair.bat en-US ZiraPro
 tts-repair.bat ja-JP sr
 tts-repair.bat ja-JP all
+tts-repair.bat /all
 ```
 
-- 无参数：默认安装 `zh-CN` TTS（HuiHui）。语言 MSI 从 Langpacks 仓库下载，并缓存在 `Languages/`。  
-- `/list`：列出可用 TTS / SR；`[local]` 表示磁盘上已有 MSI。  
-- `locale`：安装该语言全部 TTS 语音（如 `en-US` 会装 Helen 和 ZiraPro）。  
+- `/help`：显示参数说明，并列出可选语言 / 语音。  
+- `/list`：只列出可用 TTS / SR；`[local]` 表示磁盘上已有 MSI，`[default]` 是随仓库附带的默认包。  
+- `/menu`：交互选择语言（输入编号，或 `locale [语音] [tts|sr|all]`）。  
+- 无参数：默认安装 `zh-CN` TTS（HuiHui）。该 MSI 已放在 `Languages/`，**不需要下载**。  
+- `/lang locale` 或 `locale`：安装该语言全部 TTS 语音（如 `en-US` 会装 Helen 和 ZiraPro）。  
 - `locale 语音名`：只装指定 TTS 语音。  
 - `locale sr`：只装该语言识别包。  
 - `locale all`：TTS + SR。  
 - `/all`：安装清单中全部语言包。  
 
-语言 MSI 不在主仓。脚本会按所选语言从 [tts-repair-win7-langpacks](https://github.com/wpstangzhiwei/tts-repair-win7-langpacks.git) 下载对应文件到 `Languages/` 并保留作缓存，再安装。若本地已有 `Langpacks` 子模块，则直接用其中的文件。
+默认的 `MSSpeech_TTS_zh-CN_HuiHui.msi` 在主仓中。其他语言 MSI 不在主仓：脚本按 本地缓存 `Languages/` → 本地 `Langpacks/` 子模块 → 从 Langpacks 仓库/镜像下载 的顺序解析，下载成功后缓存在 `Languages/`。Win7 上 GitHub 直链常会因 TLS / 证书吊销检查失败，因此默认中文包改为随脚本分发。
 
 安装日志写在 `platforms/windows/win7/logs/`。
 
@@ -37,7 +42,7 @@ tts-repair.bat ja-JP all
 脚本按顺序处理：
 
 1. 安装或修复 `resources/Microsoft Speech Platform/SpeechPlatformRuntime(x86).msi`  
-2. 解析所选语言包：本地缓存 `Languages/` → 本地 `Langpacks/` → 从 Langpacks 仓库下载到 `Languages/`（缓存）  
+2. 解析所选语言包：本地 `Languages/`（含随仓库附带的 zh-CN HuiHui）→ 本地 `Langpacks/` → 必要时再下载到 `Languages/`（缓存）  
 3. 安装或修复所选 `MSSpeech_*.msi`  
 4. 若所选 TTS 的 SAPI 映射缺失，则运行 `resources/SAPI_Unifier/SAPI_Unifier_requires_dot_NET_4.exe`  
 
@@ -62,10 +67,13 @@ win7/
   scripts/
     auto-close-sapi-unifier.vbs
     msi-productcode.vbs
+    download-msi.ps1
   resources/
     Microsoft Speech Platform/
       SpeechPlatformRuntime(x86).msi
-      Languages/                                # download cache (gitignored)
+      Languages/
+        MSSpeech_TTS_zh-CN_HuiHui.msi   # bundled default
+        # other MSIs: download cache (gitignored)
       Langpacks/                                # git submodule
     SAPI_Unifier/
       SAPI_Unifier_requires_dot_NET_4.exe

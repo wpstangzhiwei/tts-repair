@@ -9,8 +9,9 @@ set "RES_DIR=%SCRIPT_DIR%resources"
 set "LOG_DIR=%SCRIPT_DIR%logs"
 set "LANG_DIR=%RES_DIR%\Microsoft Speech Platform\Languages"
 set "LANGPACKS_DIR=%RES_DIR%\Microsoft Speech Platform\Langpacks"
-set "LANGPACKS_URL=https://github.com/wpstangzhiwei/tts-repair-win7-langpacks/raw/main"
+set "LANGPACKS_URL=https://raw.githubusercontent.com/wpstangzhiwei/tts-repair-win7-langpacks/main"
 set "CLOSE_UNIFIER_VBS=%SCRIPT_DIR%scripts\auto-close-sapi-unifier.vbs"
+set "DOWNLOAD_PS1=%SCRIPT_DIR%scripts\download-msi.ps1"
 set "MSI_CODE_VBS=%SCRIPT_DIR%scripts\msi-productcode.vbs"
 set "RUNTIME_MSI=%RES_DIR%\Microsoft Speech Platform\SpeechPlatformRuntime(x86).msi"
 set "UNIFIER_EXE=%RES_DIR%\SAPI_Unifier\SAPI_Unifier_requires_dot_NET_4.exe"
@@ -23,6 +24,7 @@ set "WANT_LOCALE="
 set "WANT_VOICE="
 set "WANT_KIND=tts"
 set "DO_LIST=0"
+set "DO_MENU=0"
 set "DO_ALL=0"
 set "NEED_UNIFIER=0"
 set "SEL_N=0"
@@ -36,6 +38,10 @@ if "!DO_LIST!"=="1" (
   call :list_packs
   exit /b 0
 )
+if "!DO_MENU!"=="1" (
+  call :pick_locale
+  if errorlevel 1 exit /b 1
+)
 
 if "!DO_ALL!"=="0" if "!WANT_LOCALE!"=="" set "WANT_LOCALE=zh-CN"
 
@@ -44,6 +50,7 @@ echo Win7 TTS Repair - Check ^> Repair ^> Verify
 echo ============================================================
 echo Script Path: %SCRIPT_DIR%
 echo Resource Path: %RES_DIR%
+echo Help: tts-repair.bat /help    Menu: tts-repair.bat /menu
 if "!DO_ALL!"=="1" (
   echo Target: ALL language packs
 ) else (
@@ -118,9 +125,20 @@ if /I "%~1"=="/help" goto :usage
 if /I "%~1"=="-help" goto :usage
 if /I "%~1"=="/list" set "DO_LIST=1" & shift & goto :parse_args
 if /I "%~1"=="-list" set "DO_LIST=1" & shift & goto :parse_args
+if /I "%~1"=="/menu" set "DO_MENU=1" & shift & goto :parse_args
+if /I "%~1"=="-menu" set "DO_MENU=1" & shift & goto :parse_args
 if /I "%~1"=="/all" set "DO_ALL=1" & set "WANT_KIND=all" & shift & goto :parse_args
 if /I "%~1"=="-all" set "DO_ALL=1" & set "WANT_KIND=all" & shift & goto :parse_args
+if /I "%~1"=="/lang" goto :parse_lang
+if /I "%~1"=="-lang" goto :parse_lang
 if /I "%~1"=="list" set "DO_LIST=1" & shift & goto :parse_args
+if /I "%~1"=="menu" (
+  if "!WANT_LOCALE!"=="" (
+    set "DO_MENU=1"
+    shift
+    goto :parse_args
+  )
+)
 if /I "%~1"=="all" (
   if "!WANT_LOCALE!"=="" (
     set "DO_ALL=1"
@@ -145,27 +163,49 @@ if "!WANT_VOICE!"=="" (
 echo [ERROR] Unknown argument: %~1
 goto :usage
 
+:parse_lang
+shift
+if "%~1"=="" goto :usage
+set "WANT_LOCALE=%~1"
+shift
+goto :parse_args
+
 :usage
 echo Usage:
-echo   tts-repair.bat
+echo   tts-repair.bat /help
 echo   tts-repair.bat /list
-echo   tts-repair.bat /all
+echo   tts-repair.bat /menu
+echo   tts-repair.bat
+echo   tts-repair.bat /lang zh-CN
 echo   tts-repair.bat zh-CN
 echo   tts-repair.bat zh-CN HuiHui
 echo   tts-repair.bat en-US
 echo   tts-repair.bat en-US ZiraPro
 echo   tts-repair.bat ja-JP sr
 echo   tts-repair.bat ja-JP all
+echo   tts-repair.bat /all
 echo.
-echo Default without arguments: zh-CN TTS.
+echo Choose a language:
+echo   /help            Show this help and the pack list
+echo   /list            List locales and voices
+echo   /menu            Interactive picker: number or locale
+echo   /lang locale     Install TTS for that locale
+echo   locale           Install all TTS voices for that locale
+echo   locale Voice     Install one TTS voice
+echo   locale sr        Install recognizer only
+echo   locale all       Install TTS + SR
+echo   /all             Install every pack in the catalog
+echo.
+echo Default without arguments: zh-CN HuiHui from the bundled local MSI.
 echo Kind: tts  sr  all
-echo Language MSIs are downloaded from the Langpacks repo and cached in Languages\.
+echo Other language MSIs: local Languages\ cache, then Langpacks\, then download.
 call :list_packs
 exit /b 1
 
 :list_packs
-echo Available packs. [local] = cached or present in Langpacks.
-echo Missing MSIs are downloaded from the Langpacks repo into Languages\ and kept as cache.
+echo Available packs. [local] = bundled, cached, or present in Langpacks.
+echo [default] = shipped with this repo, no download required.
+echo Other missing MSIs are downloaded into Languages\ and kept as cache.
 echo.
 echo TTS:
 for /f "tokens=3" %%L in ('findstr /b /c:"rem @pack " "%~f0"') do (
@@ -175,6 +215,7 @@ for /f "tokens=3" %%L in ('findstr /b /c:"rem @pack " "%~f0"') do (
     set "MARK="
     if exist "%LANG_DIR%\%%L" set "MARK= [local]"
     if not defined MARK if exist "%LANGPACKS_DIR%\%%L" set "MARK= [local]"
+    if /I "%%L"=="MSSpeech_TTS_zh-CN_HuiHui.msi" set "MARK=!MARK! [default]"
     for /f "tokens=1* delims=_" %%A in ("!REST!") do echo   %%A  %%B!MARK!
   )
 )
@@ -190,6 +231,87 @@ for /f "tokens=3" %%L in ('findstr /b /c:"rem @pack " "%~f0"') do (
     for /f "tokens=1* delims=_" %%A in ("!REST!") do echo   %%A  %%B!MARK!
   )
 )
+exit /b 0
+
+:pick_locale
+set "MENU_N=0"
+echo.
+echo ------------------------------------------------------------
+echo Choose a language
+echo ------------------------------------------------------------
+echo.
+echo TTS packs:
+for /f "tokens=3" %%L in ('findstr /b /c:"rem @pack " "%~f0"') do (
+  set "FN=%%~nL"
+  if /I "!FN:~0,13!"=="MSSpeech_TTS_" (
+    set "REST=!FN:MSSpeech_TTS_=!"
+    set /a MENU_N+=1
+    set "MARK="
+    if exist "%LANG_DIR%\%%L" set "MARK= [local]"
+    if not defined MARK if exist "%LANGPACKS_DIR%\%%L" set "MARK= [local]"
+    if /I "%%L"=="MSSpeech_TTS_zh-CN_HuiHui.msi" set "MARK=!MARK! [default]"
+    for /f "tokens=1* delims=_" %%A in ("!REST!") do (
+      echo   !MENU_N!^) %%A  %%B!MARK!
+      set "MENU_LOC_!MENU_N!=%%A"
+      set "MENU_VOICE_!MENU_N!=%%B"
+    )
+  )
+)
+echo.
+echo Enter a number, or: locale [voice] [tts^|sr^|all]
+echo Empty = zh-CN HuiHui [default, bundled].
+set /p "MENU_IN=Select: "
+if "!MENU_IN!"=="" (
+  set "WANT_LOCALE=zh-CN"
+  set "WANT_VOICE=HuiHui"
+  set "WANT_KIND=tts"
+  exit /b 0
+)
+if /I "!MENU_IN!"=="/help" goto :usage
+if /I "!MENU_IN!"=="/list" goto :usage
+echo(!MENU_IN!| findstr /r "^[1-9][0-9]*$" >nul
+if not errorlevel 1 (
+  call set "PICK_LOC=%%MENU_LOC_!MENU_IN!%%"
+  call set "PICK_VOICE=%%MENU_VOICE_!MENU_IN!%%"
+  if "!PICK_LOC!"=="" (
+    echo [ERROR] Invalid menu number: !MENU_IN!
+    exit /b 1
+  )
+  set "WANT_LOCALE=!PICK_LOC!"
+  set "WANT_VOICE=!PICK_VOICE!"
+  set "WANT_KIND=tts"
+  exit /b 0
+)
+set "P1="
+set "P2="
+set "P3="
+for /f "tokens=1,2,3" %%A in ("!MENU_IN!") do (
+  set "P1=%%A"
+  set "P2=%%B"
+  set "P3=%%C"
+)
+if /I "!P1!"=="all" (
+  set "DO_ALL=1"
+  set "WANT_KIND=all"
+  exit /b 0
+)
+set "WANT_LOCALE=!P1!"
+if /I "!P2!"=="tts" (
+  set "WANT_KIND=tts"
+  set "P2="
+)
+if /I "!P2!"=="sr" (
+  set "WANT_KIND=sr"
+  set "P2="
+)
+if /I "!P2!"=="all" (
+  set "WANT_KIND=all"
+  set "P2="
+)
+if not "!P2!"=="" set "WANT_VOICE=!P2!"
+if /I "!P3!"=="tts" set "WANT_KIND=tts"
+if /I "!P3!"=="sr" set "WANT_KIND=sr"
+if /I "!P3!"=="all" set "WANT_KIND=all"
 exit /b 0
 
 :select_packs
@@ -255,15 +377,35 @@ if defined CACHE_PATH (
   exit /b 0
 )
 echo [DOWNLOAD] %CACHE_NAME%
-echo   %LANGPACKS_URL%/%CACHE_NAME%
 if not exist "%LANG_DIR%" mkdir "%LANG_DIR%" >nul 2>&1
 set "DL_DEST=%LANG_DIR%\%CACHE_NAME%"
-set "DL_URL=%LANGPACKS_URL%/%CACHE_NAME%"
-powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "& { try { [Net.ServicePointManager]::SecurityProtocol = [Enum]::ToObject([Net.SecurityProtocolType], 3072) } catch {} ; $d = $env:DL_DEST; $u = $env:DL_URL; $t = $d + '.partial'; $w = New-Object System.Net.WebClient; $w.Headers.Add('User-Agent','tts-repair'); if (Test-Path -LiteralPath $t) { Remove-Item -LiteralPath $t -Force }; $w.DownloadFile($u, $t); if (-not (Test-Path -LiteralPath $t) -or ((Get-Item -LiteralPath $t).Length -le 0)) { throw 'empty download' }; if (Test-Path -LiteralPath $d) { Remove-Item -LiteralPath $d -Force }; Move-Item -LiteralPath $t -Destination $d }"
+set "DL_NAME=%CACHE_NAME%"
+if exist "%DOWNLOAD_PS1%" (
+  powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%DOWNLOAD_PS1%"
+) else (
+  echo [ERROR] Missing downloader: "%DOWNLOAD_PS1%"
+)
 if not exist "%DL_DEST%" (
-  echo [ERROR] Missing language MSI: "%CACHE_NAME%"
-  echo [ERROR] Download from Langpacks repo failed.
-  echo [ERROR] %LANGPACKS_URL%/%CACHE_NAME%
+  echo.
+  echo [ERROR] Automatic download failed: "%CACHE_NAME%"
+  echo.
+  echo Please download the file manually in a browser, then run this script again.
+  echo.
+  echo   1. Download one of these URLs:
+  echo      https://cdn.jsdelivr.net/gh/wpstangzhiwei/tts-repair-win7-langpacks@main/%CACHE_NAME%
+  echo      %LANGPACKS_URL%/%CACHE_NAME%
+  echo      https://github.com/wpstangzhiwei/tts-repair-win7-langpacks/blob/main/%CACHE_NAME%
+  echo.
+  echo   2. Save it as this exact file name:
+  echo      %CACHE_NAME%
+  echo.
+  echo   3. Put it in this folder:
+  echo      %LANG_DIR%
+  echo.
+  if exist "%LANG_DIR%" start "" explorer "%LANG_DIR%"
+  echo The target folder has been opened. Copy the MSI there, then rerun tts-repair.bat.
+  echo.
+  pause
   exit /b 1
 )
 set "CACHE_PATH=%DL_DEST%"
