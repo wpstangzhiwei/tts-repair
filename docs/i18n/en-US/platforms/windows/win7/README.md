@@ -18,7 +18,7 @@ The script handles these in order:
 2. Install or repair `resources/Microsoft Speech Platform/Languages/MSSpeech_TTS_zh-CN_HuiHui.msi`  
 3. If SAPI mapping is missing, run `resources/SAPI_Unifier/SAPI_Unifier_requires_dot_NET_4.exe`  
 
-SAPI Unifier is a GUI app and may require confirmation in its window. It requires **.NET Framework 4** and does **not** require `VC_redist.x86.exe`.
+SAPI Unifier is a GUI app. It requires **.NET Framework 4** and does **not** require `VC_redist.x86.exe`. Mapping finishes before the window appears; the script closes the window automatically, so you do not need to click Exit.
 
 ## How Installation Is Detected
 
