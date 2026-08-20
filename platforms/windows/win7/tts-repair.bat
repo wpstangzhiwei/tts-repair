@@ -8,7 +8,7 @@ set "SCRIPT_DIR=%~dp0"
 set "RES_DIR=%SCRIPT_DIR%resources"
 set "LOG_DIR=%SCRIPT_DIR%logs"
 set "LANG_DIR=%RES_DIR%\Microsoft Speech Platform\Languages"
-set "LANGPACKS_DIR=%RES_DIR%\Microsoft Speech Platform\langpacks"
+set "LANGPACKS_DIR=%RES_DIR%\Microsoft Speech Platform\Langpacks"
 set "LANGPACKS_URL=https://github.com/wpstangzhiwei/tts-repair-win7-langpacks/raw/main"
 set "CLOSE_UNIFIER_VBS=%SCRIPT_DIR%scripts\auto-close-sapi-unifier.vbs"
 set "MSI_CODE_VBS=%SCRIPT_DIR%scripts\msi-productcode.vbs"
@@ -159,13 +159,13 @@ echo   tts-repair.bat ja-JP all
 echo.
 echo Default without arguments: zh-CN TTS.
 echo Kind: tts  sr  all
-echo Language MSIs are downloaded from the langpacks repo and cached in Languages\.
+echo Language MSIs are downloaded from the Langpacks repo and cached in Languages\.
 call :list_packs
 exit /b 1
 
 :list_packs
-echo Available packs. [local] = cached or present in langpacks.
-echo Missing MSIs are downloaded from the langpacks repo into Languages\ and kept as cache.
+echo Available packs. [local] = cached or present in Langpacks.
+echo Missing MSIs are downloaded from the Langpacks repo into Languages\ and kept as cache.
 echo.
 echo TTS:
 for /f "tokens=3" %%L in ('findstr /b /c:"rem @pack " "%~f0"') do (
@@ -262,7 +262,7 @@ set "DL_URL=%LANGPACKS_URL%/%CACHE_NAME%"
 powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "& { try { [Net.ServicePointManager]::SecurityProtocol = [Enum]::ToObject([Net.SecurityProtocolType], 3072) } catch {} ; $d = $env:DL_DEST; $u = $env:DL_URL; $t = $d + '.partial'; $w = New-Object System.Net.WebClient; $w.Headers.Add('User-Agent','tts-repair'); if (Test-Path -LiteralPath $t) { Remove-Item -LiteralPath $t -Force }; $w.DownloadFile($u, $t); if (-not (Test-Path -LiteralPath $t) -or ((Get-Item -LiteralPath $t).Length -le 0)) { throw 'empty download' }; if (Test-Path -LiteralPath $d) { Remove-Item -LiteralPath $d -Force }; Move-Item -LiteralPath $t -Destination $d }"
 if not exist "%DL_DEST%" (
   echo [ERROR] Missing language MSI: "%CACHE_NAME%"
-  echo [ERROR] Download from langpacks repo failed.
+  echo [ERROR] Download from Langpacks repo failed.
   echo [ERROR] %LANGPACKS_URL%/%CACHE_NAME%
   exit /b 1
 )
