@@ -78,9 +78,3 @@ win7/
     SAPI_Unifier/
       SAPI_Unifier_requires_dot_NET_4.exe
 ```
-
-## Notes
-
-- Administrator rights are required.  
-- MSI installs run silently. On `1603`, ProductCode is checked again so leftover registration is not treated as a complete install by itself.  
-- The script does not install the VC++ redistributable.  
