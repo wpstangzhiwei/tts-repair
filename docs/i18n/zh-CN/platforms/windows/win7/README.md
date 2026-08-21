@@ -78,9 +78,3 @@ win7/
     SAPI_Unifier/
       SAPI_Unifier_requires_dot_NET_4.exe
 ```
-
-## 注意事项
-
-- 必须使用管理员权限。  
-- 静默安装 MSI；`1603` 时会再查 ProductCode，避免把残留安装当成成功后的唯一依据。  
-- 不自动安装 VC++ 运行库。  
