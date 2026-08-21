@@ -90,8 +90,6 @@ if "!NEED_UNIFIER!"=="1" (
   ) else (
     echo - SAPI Unifier mapping already present for selected TTS. Skip.
   )
-) else (
-  echo - SR-only repair. SAPI Unifier skipped.
 )
 
 echo.
@@ -149,7 +147,6 @@ if /I "%~1"=="all" (
   goto :parse_args
 )
 if /I "%~1"=="tts" set "WANT_KIND=tts" & shift & goto :parse_args
-if /I "%~1"=="sr" set "WANT_KIND=sr" & shift & goto :parse_args
 if "!WANT_LOCALE!"=="" (
   set "WANT_LOCALE=%~1"
   shift
@@ -181,8 +178,6 @@ echo   tts-repair.bat zh-CN
 echo   tts-repair.bat zh-CN HuiHui
 echo   tts-repair.bat en-US
 echo   tts-repair.bat en-US ZiraPro
-echo   tts-repair.bat ja-JP sr
-echo   tts-repair.bat ja-JP all
 echo   tts-repair.bat /all
 echo.
 echo Choose a language:
@@ -192,12 +187,10 @@ echo   /menu            Interactive picker: number or locale
 echo   /lang locale     Install TTS for that locale
 echo   locale           Install all TTS voices for that locale
 echo   locale Voice     Install one TTS voice
-echo   locale sr        Install recognizer only
-echo   locale all       Install TTS + SR
 echo   /all             Install every pack in the catalog
 echo.
 echo Default without arguments: zh-CN HuiHui from the bundled local MSI.
-echo Kind: tts  sr  all
+echo Kind: tts
 echo Other language MSIs: local Languages\ cache, then Langpacks\, then download.
 call :list_packs
 exit /b 1
@@ -216,18 +209,6 @@ for /f "tokens=3" %%L in ('findstr /b /c:"rem @pack " "%~f0"') do (
     if exist "%LANG_DIR%\%%L" set "MARK= [local]"
     if not defined MARK if exist "%LANGPACKS_DIR%\%%L" set "MARK= [local]"
     if /I "%%L"=="MSSpeech_TTS_zh-CN_HuiHui.msi" set "MARK=!MARK! [default]"
-    for /f "tokens=1* delims=_" %%A in ("!REST!") do echo   %%A  %%B!MARK!
-  )
-)
-echo.
-echo SR:
-for /f "tokens=3" %%L in ('findstr /b /c:"rem @pack " "%~f0"') do (
-  set "FN=%%~nL"
-  if /I "!FN:~0,12!"=="MSSpeech_SR_" (
-    set "REST=!FN:MSSpeech_SR_=!"
-    set "MARK="
-    if exist "%LANG_DIR%\%%L" set "MARK= [local]"
-    if not defined MARK if exist "%LANGPACKS_DIR%\%%L" set "MARK= [local]"
     for /f "tokens=1* delims=_" %%A in ("!REST!") do echo   %%A  %%B!MARK!
   )
 )
@@ -258,7 +239,7 @@ for /f "tokens=3" %%L in ('findstr /b /c:"rem @pack " "%~f0"') do (
   )
 )
 echo.
-echo Enter a number, or: locale [voice] [tts^|sr^|all]
+echo Enter a number, or: locale [voice] [tts^|all]
 echo Empty = zh-CN HuiHui [default, bundled].
 set /p "MENU_IN=Select: "
 if "!MENU_IN!"=="" (
@@ -300,17 +281,12 @@ if /I "!P2!"=="tts" (
   set "WANT_KIND=tts"
   set "P2="
 )
-if /I "!P2!"=="sr" (
-  set "WANT_KIND=sr"
-  set "P2="
-)
 if /I "!P2!"=="all" (
   set "WANT_KIND=all"
   set "P2="
 )
 if not "!P2!"=="" set "WANT_VOICE=!P2!"
 if /I "!P3!"=="tts" set "WANT_KIND=tts"
-if /I "!P3!"=="sr" set "WANT_KIND=sr"
 if /I "!P3!"=="all" set "WANT_KIND=all"
 exit /b 0
 
@@ -318,8 +294,7 @@ exit /b 0
 if not exist "%LANG_DIR%" mkdir "%LANG_DIR%" >nul 2>&1
 for /f "tokens=3" %%L in ('findstr /b /c:"rem @pack " "%~f0"') do (
   set "ITEM=%%L"
-  if /I not "!WANT_KIND!"=="sr" if /I "!ITEM:~0,13!"=="MSSpeech_TTS_" call :maybe_add_tts "%%L"
-  if /I not "!WANT_KIND!"=="tts" if /I "!ITEM:~0,12!"=="MSSpeech_SR_" call :maybe_add_sr "%%L"
+  if /I "!ITEM:~0,13!"=="MSSpeech_TTS_" call :maybe_add_tts "%%L"
 )
 if "!SEL_N!"=="0" (
   echo [ERROR] No matching language pack found.
@@ -347,25 +322,6 @@ set "SEL_TAG_!SEL_N!=tts-!LOC!-!VOICE!"
 set "SEL_TOKEN_!SEL_N!=!TOK!"
 set "NEED_UNIFIER=1"
 call :detect_tts_token "!TOK!" "SEL_OK_!SEL_N!" "SEL_SAPI_!SEL_N!" "SEL_PRODUCT_OK_!SEL_N!" ""
-exit /b 0
-
-:maybe_add_sr
-set "FN=%~n1"
-set "REST=!FN:MSSpeech_SR_=!"
-for /f "tokens=1* delims=_" %%A in ("!REST!") do (
-  set "LOC=%%A"
-  set "VOICE=%%B"
-)
-if "!DO_ALL!"=="0" if /I not "!LOC!"=="!WANT_LOCALE!" exit /b 0
-set /a SEL_N+=1
-set "TOK=SR_MS_!LOC!_!VOICE!_11.0"
-set "SEL_FILE_!SEL_N!=%~nx1"
-set "SEL_KIND_!SEL_N!=sr"
-set "SEL_NAME_!SEL_N!=!FN!"
-set "SEL_TAG_!SEL_N!=sr-!LOC!-!VOICE!"
-set "SEL_TOKEN_!SEL_N!=!TOK!"
-set "SEL_SAPI_!SEL_N!=1"
-call :detect_sr_token "!TOK!" "SEL_OK_!SEL_N!" "SEL_PRODUCT_OK_!SEL_N!" ""
 exit /b 0
 
 :ensure_cached
@@ -458,38 +414,17 @@ if "!%SAPIVAR%!"=="0" reg query "HKLM\SOFTWARE\Microsoft\Speech\Voices\Tokens\%T
 if "!%SAPIVAR%!"=="0" reg query "HKLM\SOFTWARE\Microsoft\Speech\Voices\Tokens\%TOKEN%" /reg:64 >nul 2>&1 && set "%SAPIVAR%=1"
 exit /b 0
 
-:detect_sr_token
-set "TOKEN=%~1"
-set "OKVAR=%~2"
-set "PRODVAR=%~3"
-set "CODE=%~4"
-set "%OKVAR%=0"
-set "%PRODVAR%=0"
-call :query_product "%CODE%" %PRODVAR%
-reg query "HKLM\SOFTWARE\Microsoft\Speech Server\v11.0\Recognizers\Tokens\%TOKEN%" >nul 2>&1 && set "%OKVAR%=1"
-if "!%OKVAR%!"=="0" reg query "HKLM\SOFTWARE\Wow6432Node\Microsoft\Speech Server\v11.0\Recognizers\Tokens\%TOKEN%" >nul 2>&1 && set "%OKVAR%=1"
-exit /b 0
-
 :print_selected_state
 for /L %%I in (1,1,!SEL_N!) do (
   call :detect_one %%I
-  if /I "!SEL_KIND_%%I!"=="tts" (
-    call :print_item "!SEL_NAME_%%I!" "!SEL_OK_%%I!" "!SEL_PRODUCT_OK_%%I!"
-    call :print_item "SAPI mapping !SEL_TOKEN_%%I!" "!SEL_SAPI_%%I!" ""
-  ) else (
-    call :print_item "!SEL_NAME_%%I!" "!SEL_OK_%%I!" "!SEL_PRODUCT_OK_%%I!"
-  )
+  call :print_item "!SEL_NAME_%%I!" "!SEL_OK_%%I!" "!SEL_PRODUCT_OK_%%I!"
+  call :print_item "SAPI mapping !SEL_TOKEN_%%I!" "!SEL_SAPI_%%I!" ""
 )
 exit /b 0
 
 :detect_one
 set "I=%~1"
-if /I "!SEL_KIND_%I%!"=="tts" (
-  call :detect_tts_token "!SEL_TOKEN_%I%!" "SEL_OK_%I%" "SEL_SAPI_%I%" "SEL_PRODUCT_OK_%I%" "!SEL_CODE_%I%!"
-) else (
-  call :detect_sr_token "!SEL_TOKEN_%I%!" "SEL_OK_%I%" "SEL_PRODUCT_OK_%I%" "!SEL_CODE_%I%!"
-  set "SEL_SAPI_%I%=1"
-)
+call :detect_tts_token "!SEL_TOKEN_%I%!" "SEL_OK_%I%" "SEL_SAPI_%I%" "SEL_PRODUCT_OK_%I%" "!SEL_CODE_%I%!"
 exit /b 0
 
 :require_admin
@@ -597,32 +532,6 @@ exit /b 1
 
 rem Microsoft Speech Platform Runtime Languages 11
 rem https://github.com/wpstangzhiwei/tts-repair-win7-langpacks
-rem @pack MSSpeech_SR_ca-ES_TELE.msi
-rem @pack MSSpeech_SR_da-DK_TELE.msi
-rem @pack MSSpeech_SR_de-DE_TELE.msi
-rem @pack MSSpeech_SR_en-AU_TELE.msi
-rem @pack MSSpeech_SR_en-CA_TELE.msi
-rem @pack MSSpeech_SR_en-GB_TELE.msi
-rem @pack MSSpeech_SR_en-IN_TELE.msi
-rem @pack MSSpeech_SR_en-US_TELE.msi
-rem @pack MSSpeech_SR_es-ES_TELE.msi
-rem @pack MSSpeech_SR_es-MX_TELE.msi
-rem @pack MSSpeech_SR_fi-FI_TELE.msi
-rem @pack MSSpeech_SR_fr-CA_TELE.msi
-rem @pack MSSpeech_SR_fr-FR_TELE.msi
-rem @pack MSSpeech_SR_it-IT_TELE.msi
-rem @pack MSSpeech_SR_ja-JP_TELE.msi
-rem @pack MSSpeech_SR_ko-KR_TELE.msi
-rem @pack MSSpeech_SR_nb-NO_TELE.msi
-rem @pack MSSpeech_SR_nl-NL_TELE.msi
-rem @pack MSSpeech_SR_pl-PL_TELE.msi
-rem @pack MSSpeech_SR_pt-BR_TELE.msi
-rem @pack MSSpeech_SR_pt-PT_TELE.msi
-rem @pack MSSpeech_SR_ru-RU_TELE.msi
-rem @pack MSSpeech_SR_sv-SE_TELE.msi
-rem @pack MSSpeech_SR_zh-CN_TELE.msi
-rem @pack MSSpeech_SR_zh-HK_TELE.msi
-rem @pack MSSpeech_SR_zh-TW_TELE.msi
 rem @pack MSSpeech_TTS_ca-ES_Herena.msi
 rem @pack MSSpeech_TTS_da-DK_Helle.msi
 rem @pack MSSpeech_TTS_de-DE_Hedda.msi
