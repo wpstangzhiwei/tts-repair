@@ -239,6 +239,31 @@ function Save-CacheMeta([string]$CachedPath, [object]$Cab, [string]$Build, [stri
 function Remove-CacheEntry([string]$CachedPath) {
   Remove-Item -LiteralPath $CachedPath -Force -ErrorAction SilentlyContinue
   Remove-Item -LiteralPath (Get-CacheMetaPath $CachedPath) -Force -ErrorAction SilentlyContinue
+  $pubKeyPath = Get-PublicKeyPath -PlainPath $CachedPath
+  if ($pubKeyPath) {
+    Remove-Item -LiteralPath $pubKeyPath -Force -ErrorAction SilentlyContinue
+  }
+}
+
+# DISM's Add-WindowsCapability -Source scans the directory for cabs using the
+# CBS public-key naming convention (~31bf3856ad364e35~<arch>~~).  uupdump delivers
+# plain-named cabs; create a public-key-named copy so DISM can resolve it.
+$script:WinPubKey = "31bf3856ad364e35"
+
+function Get-PublicKeyPath([string]$PlainPath) {
+  $dir  = Split-Path $PlainPath -Parent
+  $name = Split-Path $PlainPath -Leaf
+  if ($name -match '^(.+)-Package-([^-]+)\.cab$') {
+    return Join-Path $dir ("{0}-Package~{1}~{2}~~.cab" -f $Matches[1], $script:WinPubKey, $Matches[2])
+  }
+  return $null
+}
+
+function Ensure-PublicKeyCopy([string]$PlainPath) {
+  $pubKeyPath = Get-PublicKeyPath -PlainPath $PlainPath
+  if ($pubKeyPath -and -not (Test-Path -LiteralPath $pubKeyPath)) {
+    Copy-Item -LiteralPath $PlainPath -Destination $pubKeyPath -Force
+  }
 }
 
 function Ensure-Cab([string]$LocLower, [object]$OsInfo, [string]$CacheDir) {
@@ -247,6 +272,7 @@ function Ensure-Cab([string]$LocLower, [object]$OsInfo, [string]$CacheDir) {
 
   if (Test-CacheFresh -CachedPath $cached -ExpectedBuild $OsInfo.Build -ExpectedArch $OsInfo.Arch) {
     Write-Log "- local cache: $cabName"
+    Ensure-PublicKeyCopy -PlainPath $cached
     return [pscustomobject]@{ Ok = $true; Cached = $true; Path = $cached; Name = $cabName }
   }
 
@@ -257,6 +283,7 @@ function Ensure-Cab([string]$LocLower, [object]$OsInfo, [string]$CacheDir) {
     $cab = Resolve-TtsCab -UpdateId $upd.Id -LangLower $LocLower -Arch $OsInfo.Arch
     Save-Cab -Cab $cab -Dest $cached
     Save-CacheMeta -CachedPath $cached -Cab $cab -Build $OsInfo.Build -Arch $OsInfo.Arch -UpdateId $upd.Id
+    Ensure-PublicKeyCopy -PlainPath $cached
     return [pscustomobject]@{ Ok = $true; Cached = $false; Path = $cached; Name = $cabName }
   } catch {
     return [pscustomobject]@{ Ok = $false; Error = $_.Exception.Message }
