@@ -6,22 +6,25 @@
 
 ## 版本策略
 
-- `win7/`：Windows 7 专用实现（当前已提供修复脚本）。
-- `win10-plus/`：Windows 10 与 Windows 11+ 共用基线。未发现 Win11 专属差异前，不单独建 `win11/`。
+- `win7/`：Windows 7 专用实现（基于 Microsoft Speech Platform）。
+- `win10/`：Windows 10 实现（基于 DISM `Language.TextToSpeech` 能力）。
+- `win11/`：Windows 11 实现，流程与 `win10/` 相同，独立成目录以便后续适配平台差异。
 
 ## 当前状态
 
 | 目录 | 状态 |
 |---|---|
-| [win7](docs/i18n/zh-CN/platforms/windows/win7/README.md) | 已实现 `tts-repair.bat` |
-| [win10-plus](docs/i18n/zh-CN/platforms/windows/win10-plus/README.md) | 目录骨架已建，脚本待实现 |
+| [win7](win7/README.md) | 已实现 `tts-repair.bat` |
+| [win10](win10/README.md) | 已实现 `tts-repair.bat` |
+| [win11](win11/README.md) | 已实现 `tts-repair.bat` |
 
 ## 常见问题域
 
-- Microsoft Speech Platform Runtime / 语音包缺失或残留。
+- Microsoft Speech Platform Runtime / 语音包缺失或残留（Win7）。
+- `Language.TextToSpeech` 能力 / 声音缺失（Win10/11），常见于离线机或 WSUS 管控、无法从 Windows Update 获取的机器。
 - SAPI 与 Speech Platform 语音映射不一致。
 - 编码、区域设置导致发音异常。
-- 需要管理员权限才能安装 MSI。
+- 需要管理员权限才能安装 MSI / DISM 能力。
 
 ## 技术细节（Win7 实现）
 

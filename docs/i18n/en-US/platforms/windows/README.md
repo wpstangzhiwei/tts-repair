@@ -6,22 +6,27 @@ This directory holds Windows TTS repair scripts, resources, and notes.
 
 ## Version Strategy
 
-- `win7/`: Windows 7 specific implementation (repair script is available).
-- `win10-plus/`: shared baseline for Windows 10 and Windows 11+. Do not add `win11/` unless a confirmed Win11-only difference appears.
+- `win7/`: Windows 7 specific implementation (Microsoft Speech Platform based).
+- `win10/`: Windows 10 implementation (DISM `Language.TextToSpeech` capability based).
+- `win11/`: Windows 11 implementation; same flow as `win10/`, kept as a separate directory
+  for platform-specific adjustments.
 
 ## Current Status
 
 | Directory | Status |
 |---|---|
-| [win7](docs/i18n/en-US/platforms/windows/win7/README.md) | `tts-repair.bat` implemented |
-| [win10-plus](docs/i18n/en-US/platforms/windows/win10-plus/README.md) | skeleton only; scripts pending |
+| [win7](win7/README.md) | `tts-repair.bat` implemented |
+| [win10](win10/README.md) | `tts-repair.bat` implemented |
+| [win11](win11/README.md) | `tts-repair.bat` implemented |
 
 ## Typical Problem Areas
 
-- Missing or leftover Microsoft Speech Platform Runtime / voice packs.
+- Missing or leftover Microsoft Speech Platform Runtime / voice packs (Win7).
+- Missing `Language.TextToSpeech` capabilities / voices (Win10/11), e.g. on offline or
+  WSUS-managed machines where Windows Update cannot deliver them.
 - SAPI mapping out of sync with Speech Platform voices.
 - Encoding and locale pronunciation issues.
-- Administrator rights required to install MSI packages.
+- Administrator rights required to install MSI packages / DISM capabilities.
 
 ## Technical Notes (Win7 Implementation)
 

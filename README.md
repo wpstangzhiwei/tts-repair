@@ -9,7 +9,8 @@ Cross-platform text-to-speech (TTS) repair toolkit. Documentation in [English](d
 | Platform | Implementation |
 |---|---|
 | **Windows 7** | `platforms/windows/win7/tts-repair.bat` — complete |
-| Windows 10 / 11+ | `platforms/windows/win10-plus/` — skeleton only |
+| **Windows 10** | `platforms/windows/win10/tts-repair.bat` — complete |
+| **Windows 11** | `platforms/windows/win11/tts-repair.bat` — complete |
 | Linux / macOS | Planned |
 
 ## Quick Start (Windows 7)
@@ -29,12 +30,29 @@ platforms\windows\win7\tts-repair.bat
 2. **Language packs** (TTS and/or SR) — resolves from local cache → submodule → download
 3. **SAPI mapping** — runs `SAPI_Unifier_requires_dot_NET_4.exe` (requires .NET Framework 4, **not** VC++ redist)
 
+## Quick Start (Windows 10 / 11)
+
+```bat
+# Run as Administrator
+platforms\windows\win10\tts-repair.bat
+platforms\windows\win11\tts-repair.bat
+```
+
+- Default: repairs the **zh-CN** TTS voice (`Language.TextToSpeech~~~zh-CN~0.0.1.0`)
+- Use `/help`, `/menu`, or `locale` to select another language (49 locales supported)
+- Checks the DISM capability state first; missing voices are repaired fully offline:
+  the matching cab is fetched from local `cache\` or auto-downloaded from
+  [uupdump.net](https://uupdump.net) for the detected OS build (SHA1 verified), then
+  installed via `Add-WindowsCapability -LimitAccess`
+- Details: [Windows 10](docs/i18n/en-US/platforms/windows/win10/README.md) /
+  [Windows 11](docs/i18n/en-US/platforms/windows/win11/README.md)
+
 ## Technical Details
 
-- **Silent MSI installs** — `/quiet /norestart`
+- **Silent MSI installs** (Win7) — `/quiet /norestart`
 - **Detection by payload files**, not Uninstall registry leftovers
-- **Admin required** for MSI installation
-- **Logs** written to `platforms/windows/win7/logs/`
+- **Admin required** for MSI installation / DISM capability install
+- **Logs**: Win7 → `platforms/windows/win7/logs/`; Win10/11 → `logs\` per platform dir
 
 ## Directory Layout
 
@@ -50,6 +68,10 @@ tts-repair/
     │   ├── tts-repair.bat
     │   ├── scripts/
     │   └── resources/
-    └── win10-plus/
+    ├── win10/
+    │   ├── tts-repair.bat
+    │   └── scripts/
+    └── win11/
+        ├── tts-repair.bat
         └── scripts/
 ```

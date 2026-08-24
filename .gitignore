@@ -3,3 +3,9 @@
 platforms/windows/win7/logs/
 platforms/windows/win7/resources/Microsoft Speech Platform/Languages/*
 !platforms/windows/win7/resources/Microsoft Speech Platform/Languages/MSSpeech_TTS_zh-CN_HuiHui.msi
+
+# Win10/11: downloaded capability cabs and repair logs are not tracked.
+platforms/windows/win10/cache/
+platforms/windows/win10/logs/
+platforms/windows/win11/cache/
+platforms/windows/win11/logs/
