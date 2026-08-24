@@ -262,6 +262,7 @@ function Get-PublicKeyPath([string]$PlainPath) {
 function Ensure-PublicKeyCopy([string]$PlainPath) {
   $pubKeyPath = Get-PublicKeyPath -PlainPath $PlainPath
   if ($pubKeyPath -and -not (Test-Path -LiteralPath $pubKeyPath)) {
+    Write-Log "- creating CBS public-key copy for DISM compatibility"
     Copy-Item -LiteralPath $PlainPath -Destination $pubKeyPath -Force
   }
 }
@@ -311,7 +312,7 @@ function Install-TtsCapability([string]$CapabilityName, [string]$CabPath, [strin
   # 1904x) fail capability-source resolution without a full FOD repo layout; a
   # direct package install succeeds and the capability reports Installed after it.
   try {
-    $result = Add-WindowsPackage -Online -PackagePath $CabPath -LimitAccess -ErrorAction Stop
+    $result = Add-WindowsPackage -Online -PackagePath $CabPath -ErrorAction Stop
     if ($result.RestartNeeded) {
       Write-Log "[WARN] Restart required to finish the installation."
     }
