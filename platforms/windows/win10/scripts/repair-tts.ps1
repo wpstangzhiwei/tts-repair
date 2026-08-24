@@ -63,7 +63,9 @@ function Get-OsInfo {
   $cv = Get-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion"
   $arch = $env:PROCESSOR_ARCHITEW6432
   if (-not $arch) { $arch = $env:PROCESSOR_ARCHITECTURE }
-  if ($arch -match "ARM64") { $arch = "arm64" } else { $arch = "amd64" }
+  if ($arch -match "ARM64") { $arch = "arm64" }
+  elseif ($arch -match "x86") { $arch = "x86" }
+  else { $arch = "amd64" }
   return [pscustomobject]@{
     Build = [string]$cv.CurrentBuildNumber
     Ubr   = [string]$cv.UBR
