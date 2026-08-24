@@ -11,7 +11,9 @@ voice is missing this script installs the capability fully offline:
    [uupdump.net](https://uupdump.net) (files are served by Microsoft's official CDN and
    verified against the published SHA1).
 3. Installs with `Add-WindowsCapability -Online -Source <cache> -LimitAccess`
-   (`-LimitAccess` never touches Windows Update / WSUS).
+   (`-LimitAccess` never touches Windows Update / WSUS). If capability-source
+   resolution fails (seen on early Win10 1904x builds without a full FOD repo
+   layout), the cab is installed directly via `Add-WindowsPackage` instead.
 4. Re-verifies the capability state and lists installed voice tokens.
 
 ## How to Run

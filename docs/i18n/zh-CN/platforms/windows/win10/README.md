@@ -10,7 +10,9 @@
 2. 解析对应 cab：优先本地 `cache\`，缺失时从 [uupdump.net](https://uupdump.net)
    下载（文件实际来自微软官方 CDN，并按公布的 SHA1 校验）。
 3. 用 `Add-WindowsCapability -Online -Source <cache> -LimitAccess` 离线安装
-   （`-LimitAccess` 保证完全不访问 Windows Update / WSUS）。
+   （`-LimitAccess` 保证完全不访问 Windows Update / WSUS）。若能力源解析失败
+   （常见于早期 Win10 1904x、无完整 FOD 仓库布局时），自动改用
+   `Add-WindowsPackage` 直接安装 cab 包体。
 4. 复检能力状态，并列出已注册的语音 token。
 
 ## 如何运行

@@ -263,24 +263,39 @@ function Ensure-Cab([string]$LocLower, [object]$OsInfo, [string]$CacheDir) {
   }
 }
 
-function Install-TtsCapability([string]$CapabilityName, [string]$SourceDir) {
+function Install-TtsCapability([string]$CapabilityName, [string]$CabPath, [string]$SourceDir) {
   Write-Log "[INSTALL] $CapabilityName"
+
+  # Preferred: capability-aware install (handles staging and dependencies).
+  $hr = ""
   try {
     $result = Add-WindowsCapability -Online -Name $CapabilityName -Source $SourceDir -LimitAccess -ErrorAction Stop
-  } catch {
-    $hr = ""
-    if ($_.Exception.Message -match "0x[0-9a-fA-F]{7,8}") { $hr = $Matches[0].ToLowerInvariant() }
-    Write-Log "[ERROR] Add-WindowsCapability failed: $($_.Exception.Message)"
-    if ($hr -eq "0x800f081f") {
-      Write-Log "        The cached cab does not match this Windows image. It will be refreshed."
+    if ($result.RestartNeeded) {
+      Write-Log "[WARN] Restart required to finish the installation."
     }
-    return [pscustomobject]@{ Ok = $false; HResult = $hr }
+    Write-Log "[OK] Capability installed: $CapabilityName"
+    return [pscustomobject]@{ Ok = $true; HResult = "" }
+  } catch {
+    if ($_.Exception.Message -match "0x[0-9a-fA-F]{7,8}") { $hr = $Matches[0].ToLowerInvariant() }
+    Write-Log "[WARN] Add-WindowsCapability failed ($($hr)). Falling back to direct package install."
   }
-  if ($result.RestartNeeded) {
-    Write-Log "[WARN] Restart required to finish the installation."
+
+  # Fallback: add the FOD cab as a plain package. Some builds (notably early Win10
+  # 1904x) fail capability-source resolution without a full FOD repo layout; a
+  # direct package install succeeds and the capability reports Installed after it.
+  try {
+    $result = Add-WindowsPackage -Online -PackagePath $CabPath -LimitAccess -ErrorAction Stop
+    if ($result.RestartNeeded) {
+      Write-Log "[WARN] Restart required to finish the installation."
+    }
+    Write-Log "[OK] Package installed directly: $(Split-Path -Leaf $CabPath)"
+    return [pscustomobject]@{ Ok = $true; HResult = "" }
+  } catch {
+    $hr2 = ""
+    if ($_.Exception.Message -match "0x[0-9a-fA-F]{7,8}") { $hr2 = $Matches[0].ToLowerInvariant() }
+    Write-Log "[ERROR] Direct package install also failed ($hr2): $($_.Exception.Message)"
+    return [pscustomobject]@{ Ok = $false; HResult = $(if ($hr2) { $hr2 } else { $hr }) }
   }
-  Write-Log "[OK] Capability installed: $CapabilityName"
-  return [pscustomobject]@{ Ok = $true; HResult = "" }
 }
 
 function Get-VoiceTokens([string]$Locale) {
@@ -393,14 +408,14 @@ foreach ($loc in $targets) {
     continue
   }
 
-  $install = Install-TtsCapability -CapabilityName $capName -SourceDir $CacheDir
+  $install = Install-TtsCapability -CapabilityName $capName -CabPath $res.Path -SourceDir $CacheDir
   if (-not $install.Ok -and $res.Cached -and $install.HResult -eq "0x800f081f") {
     # Cached cab is not applicable to this image (stale/wrong family). Refresh once.
     Write-Log "[RETRY] Discarding cached cab and re-downloading for build $($os.Build)..."
     Remove-CacheEntry -CachedPath $res.Path
     $res2 = Ensure-Cab -LocLower $langLower -OsInfo $os -CacheDir $CacheDir
     if ($res2.Ok) {
-      $install = Install-TtsCapability -CapabilityName $capName -SourceDir $CacheDir
+      $install = Install-TtsCapability -CapabilityName $capName -CabPath $res2.Path -SourceDir $CacheDir
     }
   }
   if (-not $install.Ok) {
