@@ -39,9 +39,15 @@ tts-repair.bat en-US /build 19045
   与 Windows 功能更新的 TextToSpeech 包一致。
 - Windows 11 24H2+/25H2 的同步中部分小语种（如 `ms-MY`、`ta-IN`、`ca-ES`）
   移到了独立的 LanguageExperiencePack 更新，可能查不到；此时可用 `/build`
-  指定旧版本号（如 `19045`）获取——语言 FOD cab 与具体 build 无强绑定，
-  同一 OS 家族内跨版本可正常安装。
-- cab 平铺缓存在 `cache\`；若怀疑损坏可删除后重跑（SHA1 校验会先行拦截）。
+  指定旧版本号（如 `19045`）获取。
+- 语言 FOD cab 仅在**同一服务分支内**通用（例如 19041-19045 任意版本都可用
+  19045 同步的 cab）。跨代使用（如把 Win11 的 cab 装到 Win10）会让
+  `Add-WindowsCapability` 报 `0x800f081f`。脚本对此有三层处理：无独立多语言
+  同步的启用包 build 自动回退到分支顶端（19041-19044 → 19045，22621 → 22631）；
+  每个 cab 下载后在 `.meta` 旁车文件中记录目标 build，不匹配即自动刷新；
+  若 DISM 仍对缓存 cab 报 `0x800f081f`，则丢弃缓存、按当前 build 重下并重试一次。
+- cab 平铺缓存在 `cache\`；若怀疑损坏可删除 cab 及其 `.meta` 后重跑
+  （SHA1 校验会先行拦截）。
 - 日志写入 `logs\tts-repair.log`。
 
 ## 目录结构

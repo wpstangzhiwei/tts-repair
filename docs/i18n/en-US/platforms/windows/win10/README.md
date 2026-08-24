@@ -41,10 +41,17 @@ tts-repair.bat en-US /build 19045
   lines; it matches the TextToSpeech packages published for Windows feature updates.
 - On Windows 11 24H2+/25H2 syncs some smaller locales (e.g. `ms-MY`, `ta-IN`,
   `ca-ES`) moved to separate LanguageExperiencePack updates and may not resolve;
-  use `/build` with an older build (e.g. `19045`) to fetch those cabs — language FOD
-  cabs are not build-locked and install fine across builds of the same OS family.
-- Downloaded cabs are cached flat in `cache\`; delete a cached cab if you suspect
-  corruption (the SHA1 check would catch it first).
+  use `/build` with an older build (e.g. `19045`) to fetch those cabs.
+- Language FOD cabs are shared **within a servicing branch only** (e.g. any
+  19041-19045 build can use a 19045-synced cab). A cab from another Windows
+  generation (Win11 cab on Win10, etc.) makes `Add-WindowsCapability` fail with
+  `0x800f081f`. The script handles this three ways: enablement builds without their
+  own multilanguage sync fall back to the branch tip (19041-19044 → 19045,
+  22621 → 22631); every cached cab records its target build in a `.meta` sidecar and
+  is refreshed on mismatch; and if DISM still reports `0x800f081f` for a cached cab,
+  it is discarded, re-downloaded for the detected build, and installed once more.
+- Downloaded cabs are cached flat in `cache\`; delete a cached cab (and its `.meta`)
+  if you suspect corruption (the SHA1 check would catch it first).
 - Logs are written to `logs\tts-repair.log`.
 
 ## Directory Layout
