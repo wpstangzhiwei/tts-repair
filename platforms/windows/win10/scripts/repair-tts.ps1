@@ -155,7 +155,7 @@ function Find-UupUpdateIdForBuild([string]$Build, [string]$Arch, [string]$LangLo
   return $null
 }
 
-function Resolve-TtsCab([string]$UpdateId, [string]$LangLower, [string]$Arch) {
+function Resolve-LangCab([string]$UpdateId, [string]$LangLower, [string]$Arch, [string]$FeatureName) {
   $url = "$ApiBase/get.php?id=$UpdateId&lang=$LangLower"
   Write-Log "- Query file list for language '$LangLower'"
   $resp = Invoke-RestMethod -Uri $url -TimeoutSec 300
@@ -163,13 +163,13 @@ function Resolve-TtsCab([string]$UpdateId, [string]$LangLower, [string]$Arch) {
   $files = $resp.response.files
   if (-not $files) { throw "uupdump returned no files (update $($resp.response.updateName))" }
 
-  $exact = "Microsoft-Windows-LanguageFeatures-TextToSpeech-$LangLower-Package-$Arch.cab"
+  $exact = "Microsoft-Windows-LanguageFeatures-$FeatureName-$LangLower-Package-$Arch.cab"
   if ($files.PSObject.Properties.Name -contains $exact) {
     $f = $files.$exact
     return [pscustomobject]@{ Name = $exact; Sha1 = $f.sha1; Size = [int64]$f.size; Url = $f.url }
   }
 
-  $pattern = "TextToSpeech-$LangLower-Package-$Arch\.cab$"
+  $pattern = "$FeatureName-$LangLower-Package-$Arch\.cab$"
   $key = $files.PSObject.Properties.Name |
     Where-Object { $_ -notmatch "_[0-9a-f]{8}\.cab$" -and $_ -match $pattern } |
     Select-Object -First 1
@@ -177,7 +177,7 @@ function Resolve-TtsCab([string]$UpdateId, [string]$LangLower, [string]$Arch) {
     $key = $files.PSObject.Properties.Name |
       Where-Object { $_ -match $pattern } | Select-Object -First 1
   }
-  if (-not $key) { throw "no TextToSpeech cab for '$LangLower' / $Arch in this update" }
+  if (-not $key) { throw "no $FeatureName cab for '$LangLower' / $Arch in this update" }
 
   $f = $files.$key
   return [pscustomobject]@{ Name = $key; Sha1 = $f.sha1; Size = [int64]$f.size; Url = $f.url }
@@ -229,8 +229,8 @@ function Ensure-PublicKeyCopy([string]$PlainPath) {
   }
 }
 
-function Ensure-Cab([string]$LocLower, [object]$OsInfo, [string]$CacheDir) {
-  $cabName = "Microsoft-Windows-LanguageFeatures-TextToSpeech-$LocLower-Package-$($OsInfo.Arch).cab"
+function Ensure-Cab([string]$LocLower, [object]$OsInfo, [string]$CacheDir, [string]$FeatureName) {
+  $cabName = "Microsoft-Windows-LanguageFeatures-$FeatureName-$LocLower-Package-$($OsInfo.Arch).cab"
   $cached = Join-Path $CacheDir $cabName
 
   if ((Test-Path -LiteralPath $cached) -and (Get-Item -LiteralPath $cached).Length -gt 0) {
@@ -242,7 +242,7 @@ function Ensure-Cab([string]$LocLower, [object]$OsInfo, [string]$CacheDir) {
   try {
     $upd = Find-UupUpdateId -Build $OsInfo.Build -Arch $OsInfo.Arch -LangLower $LocLower
     Write-Log ("- update: {0} (id {1})" -f $upd.Title, $upd.Id)
-    $cab = Resolve-TtsCab -UpdateId $upd.Id -LangLower $LocLower -Arch $OsInfo.Arch
+    $cab = Resolve-LangCab -UpdateId $upd.Id -LangLower $LocLower -Arch $OsInfo.Arch -FeatureName $FeatureName
     Save-Cab -Cab $cab -Dest $cached
     Ensure-PublicKeyCopy -PlainPath $cached
     return [pscustomobject]@{ Ok = $true; Path = $cached; Name = $cabName }
@@ -265,8 +265,48 @@ function Install-TtsCapability([string]$CapabilityName, [string]$CabPath, [strin
     return [pscustomobject]@{ Ok = $true; HResult = "" }
   } catch {
     if ($_.Exception.Message -match "0x[0-9a-fA-F]{7,8}") { $hr = $Matches[0].ToLowerInvariant() }
-    Write-Log "[ERROR] Add-WindowsCapability failed ($($hr)): $($_.Exception.Message)"
-    return [pscustomobject]@{ Ok = $false; HResult = $hr }
+    Write-Log "[WARN] Add-WindowsCapability failed ($($hr)): $($_.Exception.Message)"
+  }
+
+  # Minimal fallback: install the downloaded FOD cab directly.
+  try {
+    $result = Add-WindowsPackage -Online -PackagePath $CabPath -ErrorAction Stop
+    if ($result.RestartNeeded) {
+      Write-Log "[WARN] Restart required to finish the installation."
+    }
+    Write-Log "[OK] Package installed directly: $(Split-Path -Leaf $CabPath)"
+    return [pscustomobject]@{ Ok = $true; HResult = "" }
+  } catch {
+    $hr2 = ""
+    if ($_.Exception.Message -match "0x[0-9a-fA-F]{7,8}") { $hr2 = $Matches[0].ToLowerInvariant() }
+    Write-Log "[ERROR] Direct package install also failed ($hr2): $($_.Exception.Message)"
+    return [pscustomobject]@{ Ok = $false; HResult = $(if ($hr2) { $hr2 } else { $hr }) }
+  }
+}
+
+function Install-LangPackage([string]$CabPath, [string]$FeatureName, [string]$Locale) {
+  Write-Log "[INSTALL] $FeatureName package for $Locale"
+  try {
+    $result = Add-WindowsPackage -Online -PackagePath $CabPath -ErrorAction Stop
+    if ($result.RestartNeeded) {
+      Write-Log "[WARN] Restart required to finish the installation."
+    }
+    Write-Log "[OK] $FeatureName package installed: $(Split-Path -Leaf $CabPath)"
+    return $true
+  } catch {
+    $hr = ""
+    if ($_.Exception.Message -match "0x[0-9a-fA-F]{7,8}") { $hr = $Matches[0].ToLowerInvariant() }
+    Write-Log "[WARN] Failed to install $FeatureName package ($hr): $($_.Exception.Message)"
+    return $false
+  }
+}
+
+function Test-CapabilityInstalled([string]$CapabilityName) {
+  try {
+    $cap = Get-WindowsCapability -Online -Name $CapabilityName -ErrorAction Stop
+    return ($cap.State -eq "Installed")
+  } catch {
+    return $false
   }
 }
 
@@ -339,7 +379,7 @@ if ($NoInstall) {
   $failed = 0
   foreach ($loc in $targets) {
     $langLower = $loc.ToLowerInvariant()
-    $res = Ensure-Cab -LocLower $langLower -OsInfo $os -CacheDir $CacheDir
+    $res = Ensure-Cab -LocLower $langLower -OsInfo $os -CacheDir $CacheDir -FeatureName "TextToSpeech"
     if (-not $res.Ok) {
       Write-Log "[ERROR] Could not fetch cab from uupdump: $($res.Error)"
       Write-Log "        Check network access to $ApiBase, or use /build <number> to pick another build."
@@ -366,13 +406,30 @@ Write-Log "[2/3] Repair..."
 $failed = 0
 foreach ($loc in $targets) {
   $capName = "Language.TextToSpeech~~~$loc~0.0.1.0"
+  $basicCapName = "Language.Basic~~~$loc~0.0.1.0"
   if ($states[$loc] -eq "Installed") {
     Write-Log "- $loc already installed. Skip."
     continue
   }
 
   $langLower = $loc.ToLowerInvariant()
-  $res = Ensure-Cab -LocLower $langLower -OsInfo $os -CacheDir $CacheDir
+  if (-not (Test-CapabilityInstalled -CapabilityName $basicCapName)) {
+    Write-Log "- prerequisite missing: $basicCapName"
+    $basicRes = Ensure-Cab -LocLower $langLower -OsInfo $os -CacheDir $CacheDir -FeatureName "Basic"
+    if (-not $basicRes.Ok) {
+      Write-Log "[ERROR] Could not fetch Basic cab from uupdump: $($basicRes.Error)"
+      Write-Log "        Check network access to $ApiBase, or use /build <number> to pick another build."
+      $failed++
+      continue
+    }
+    if (-not (Install-LangPackage -CabPath $basicRes.Path -FeatureName "Basic" -Locale $loc)) {
+      Write-Log "[ERROR] Basic dependency install failed for $loc. Skip TTS install."
+      $failed++
+      continue
+    }
+  }
+
+  $res = Ensure-Cab -LocLower $langLower -OsInfo $os -CacheDir $CacheDir -FeatureName "TextToSpeech"
   if (-not $res.Ok) {
     Write-Log "[ERROR] Could not fetch cab from uupdump: $($res.Error)"
     Write-Log "        Check network access to $ApiBase, or use /build <number> to pick another build."
@@ -381,6 +438,9 @@ foreach ($loc in $targets) {
   }
 
   $install = Install-TtsCapability -CapabilityName $capName -CabPath $res.Path -SourceDir $CacheDir
+  if (-not $install.Ok) {
+    Write-Log "[WARN] TTS install failed after Basic prerequisite check."
+  }
   if (-not $install.Ok) {
     $failed++
   }
