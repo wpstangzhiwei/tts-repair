@@ -53,6 +53,14 @@ platforms/windows/
 采用 [GPL-3.0-only](../LICENSE)。  
 使用、引用并发布衍生作品时，必须按 GPLv3 公开对应源代码。
 
+## 技术细节
+
+- **静默 MSI 安装**（Win7）— `/quiet /norestart`
+- **基于载荷文件检测**，而非卸载注册表残留
+- **需要管理员权限**进行 MSI 安装 / DISM 能力安装
+- **架构支持**：amd64（64位）、x86（32位）、arm64（ARM64）
+- **日志**：Win7 → `platforms/windows/win7/logs/`；Win10/11 → 平台目录下的 `logs\`
+
 ## 多语言规则
 
 - 正文文档放在 `docs/i18n/<locale>/`。

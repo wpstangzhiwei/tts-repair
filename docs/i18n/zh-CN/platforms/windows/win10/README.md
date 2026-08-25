@@ -6,7 +6,7 @@
 `Language.TextToSpeech` 能力（capability，如 `Language.TextToSpeech~~~zh-CN~0.0.1.0`）
 形式发布；脚本将其完整离线补齐：
 
-1. 自动探测系统版本号（`CurrentBuildNumber`）与 CPU 架构。
+1. 自动探测系统版本号（`CurrentBuildNumber`）与 CPU 架构（amd64、x86、arm64）。
 2. 解析对应 cab：优先本地 `cache\`，缺失时从 [uupdump.net](https://uupdump.net)
    下载（文件实际来自微软官方 CDN，并按公布的 SHA1 校验）。
 3. 用 `Add-WindowsCapability -Online -Source <cache> -LimitAccess` 离线安装

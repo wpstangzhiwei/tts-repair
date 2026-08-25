@@ -2,11 +2,11 @@
 
 ## Purpose
 
-Repair a missing Windows 10 text-to-speech (TTS) voice. Windows ships TTS voices as
+Repair a missing Windows 11 text-to-speech (TTS) voice. Windows ships TTS voices as
 `Language.TextToSpeech` capabilities (`Language.TextToSpeech~~~<locale>~0.0.1.0`); when a
 voice is missing this script installs the capability fully offline:
 
-1. Auto-detects the OS build (`CurrentBuildNumber`) and CPU architecture.
+1. Auto-detects the OS build (`CurrentBuildNumber`) and CPU architecture (amd64, x86, arm64).
 2. Resolves the matching cab from local `cache\`, or downloads it from
    [uupdump.net](https://uupdump.net) (files are served by Microsoft's official CDN and
    verified against the published SHA1).

@@ -52,6 +52,7 @@ platforms\windows\win11\tts-repair.bat
 - **Silent MSI installs** (Win7) — `/quiet /norestart`
 - **Detection by payload files**, not Uninstall registry leftovers
 - **Admin required** for MSI installation / DISM capability install
+- **Architecture support**: amd64 (64-bit), x86 (32-bit), arm64 (ARM64)
 - **Logs**: Win7 → `platforms/windows/win7/logs/`; Win10/11 → `logs\` per platform dir
 
 ## Directory Layout
