@@ -207,46 +207,6 @@ function Save-Cab([object]$Cab, [string]$Dest) {
   Write-Log ("  saved: {0} ({1:N1} MB)" -f $Dest, ($Cab.Size / 1MB))
 }
 
-# A cached cab only applies to the build family it was fetched for; a cab from a
-# different Windows version makes Add-WindowsCapability fail with 0x800f081f.
-# Each download therefore records the requested build in a .meta sidecar.
-function Get-CacheMetaPath([string]$CachedPath) {
-  return "$CachedPath.meta"
-}
-
-function Test-CacheFresh([string]$CachedPath, [string]$ExpectedBuild, [string]$ExpectedArch) {
-  if (-not (Test-Path -LiteralPath $CachedPath)) { return $false }
-  if ((Get-Item -LiteralPath $CachedPath).Length -le 0) { return $false }
-  $metaPath = Get-CacheMetaPath $CachedPath
-  if (-not (Test-Path -LiteralPath $metaPath)) { return $false }
-
-  $meta = @{}
-  foreach ($line in (Get-Content -LiteralPath $metaPath -ErrorAction SilentlyContinue)) {
-    $kv = $line -split "=", 2
-    if ($kv.Count -eq 2) { $meta[$kv[0].Trim()] = $kv[1].Trim() }
-  }
-  if ($meta["build"] -ne $ExpectedBuild) {
-    Write-Log "- cached cab targets build $($meta['build']), system is $ExpectedBuild. Refreshing."
-    return $false
-  }
-  return ($meta["arch"] -eq $ExpectedArch)
-}
-
-function Save-CacheMeta([string]$CachedPath, [object]$Cab, [string]$Build, [string]$Arch, [string]$UpdateId) {
-  Set-Content -LiteralPath (Get-CacheMetaPath $CachedPath) `
-    -Value ("build={0}`r`narch={1}`r`nsha1={2}`r`nid={3}" -f $Build, $Arch, $Cab.Sha1, $UpdateId) `
-    -Encoding ASCII
-}
-
-function Remove-CacheEntry([string]$CachedPath) {
-  Remove-Item -LiteralPath $CachedPath -Force -ErrorAction SilentlyContinue
-  Remove-Item -LiteralPath (Get-CacheMetaPath $CachedPath) -Force -ErrorAction SilentlyContinue
-  $pubKeyPath = Get-PublicKeyPath -PlainPath $CachedPath
-  if ($pubKeyPath) {
-    Remove-Item -LiteralPath $pubKeyPath -Force -ErrorAction SilentlyContinue
-  }
-}
-
 # DISM's Add-WindowsCapability -Source scans the directory for cabs using the
 # CBS public-key naming convention (~31bf3856ad364e35~<arch>~~).  uupdump delivers
 # plain-named cabs; create a public-key-named copy so DISM can resolve it.
@@ -273,21 +233,19 @@ function Ensure-Cab([string]$LocLower, [object]$OsInfo, [string]$CacheDir) {
   $cabName = "Microsoft-Windows-LanguageFeatures-TextToSpeech-$LocLower-Package-$($OsInfo.Arch).cab"
   $cached = Join-Path $CacheDir $cabName
 
-  if (Test-CacheFresh -CachedPath $cached -ExpectedBuild $OsInfo.Build -ExpectedArch $OsInfo.Arch) {
+  if ((Test-Path -LiteralPath $cached) -and (Get-Item -LiteralPath $cached).Length -gt 0) {
     Write-Log "- local cache: $cabName"
     Ensure-PublicKeyCopy -PlainPath $cached
-    return [pscustomobject]@{ Ok = $true; Cached = $true; Path = $cached; Name = $cabName }
+    return [pscustomobject]@{ Ok = $true; Path = $cached; Name = $cabName }
   }
 
-  Remove-CacheEntry -CachedPath $cached
   try {
     $upd = Find-UupUpdateId -Build $OsInfo.Build -Arch $OsInfo.Arch -LangLower $LocLower
     Write-Log ("- update: {0} (id {1})" -f $upd.Title, $upd.Id)
     $cab = Resolve-TtsCab -UpdateId $upd.Id -LangLower $LocLower -Arch $OsInfo.Arch
     Save-Cab -Cab $cab -Dest $cached
-    Save-CacheMeta -CachedPath $cached -Cab $cab -Build $OsInfo.Build -Arch $OsInfo.Arch -UpdateId $upd.Id
     Ensure-PublicKeyCopy -PlainPath $cached
-    return [pscustomobject]@{ Ok = $true; Cached = $false; Path = $cached; Name = $cabName }
+    return [pscustomobject]@{ Ok = $true; Path = $cached; Name = $cabName }
   } catch {
     return [pscustomobject]@{ Ok = $false; Error = $_.Exception.Message }
   }
@@ -296,7 +254,7 @@ function Ensure-Cab([string]$LocLower, [object]$OsInfo, [string]$CacheDir) {
 function Install-TtsCapability([string]$CapabilityName, [string]$CabPath, [string]$SourceDir) {
   Write-Log "[INSTALL] $CapabilityName"
 
-  # Preferred: capability-aware install (handles staging and dependencies).
+  # Main path: capability-aware install (handles staging and dependencies).
   $hr = ""
   try {
     $result = Add-WindowsCapability -Online -Name $CapabilityName -Source $SourceDir -LimitAccess -ErrorAction Stop
@@ -307,24 +265,8 @@ function Install-TtsCapability([string]$CapabilityName, [string]$CabPath, [strin
     return [pscustomobject]@{ Ok = $true; HResult = "" }
   } catch {
     if ($_.Exception.Message -match "0x[0-9a-fA-F]{7,8}") { $hr = $Matches[0].ToLowerInvariant() }
-    Write-Log "[WARN] Add-WindowsCapability failed ($($hr)). Falling back to direct package install."
-  }
-
-  # Fallback: add the FOD cab as a plain package. Some builds (notably early Win10
-  # 1904x) fail capability-source resolution without a full FOD repo layout; a
-  # direct package install succeeds and the capability reports Installed after it.
-  try {
-    $result = Add-WindowsPackage -Online -PackagePath $CabPath -ErrorAction Stop
-    if ($result.RestartNeeded) {
-      Write-Log "[WARN] Restart required to finish the installation."
-    }
-    Write-Log "[OK] Package installed directly: $(Split-Path -Leaf $CabPath)"
-    return [pscustomobject]@{ Ok = $true; HResult = "" }
-  } catch {
-    $hr2 = ""
-    if ($_.Exception.Message -match "0x[0-9a-fA-F]{7,8}") { $hr2 = $Matches[0].ToLowerInvariant() }
-    Write-Log "[ERROR] Direct package install also failed ($hr2): $($_.Exception.Message)"
-    return [pscustomobject]@{ Ok = $false; HResult = $(if ($hr2) { $hr2 } else { $hr }) }
+    Write-Log "[ERROR] Add-WindowsCapability failed ($($hr)): $($_.Exception.Message)"
+    return [pscustomobject]@{ Ok = $false; HResult = $hr }
   }
 }
 
@@ -439,15 +381,6 @@ foreach ($loc in $targets) {
   }
 
   $install = Install-TtsCapability -CapabilityName $capName -CabPath $res.Path -SourceDir $CacheDir
-  if (-not $install.Ok -and $res.Cached -and $install.HResult -eq "0x800f081f") {
-    # Cached cab is not applicable to this image (stale/wrong family). Refresh once.
-    Write-Log "[RETRY] Discarding cached cab and re-downloading for build $($os.Build)..."
-    Remove-CacheEntry -CachedPath $res.Path
-    $res2 = Ensure-Cab -LocLower $langLower -OsInfo $os -CacheDir $CacheDir
-    if ($res2.Ok) {
-      $install = Install-TtsCapability -CapabilityName $capName -CabPath $res2.Path -SourceDir $CacheDir
-    }
-  }
   if (-not $install.Ok) {
     $failed++
   }
