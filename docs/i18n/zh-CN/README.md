@@ -11,6 +11,7 @@
    默认装 zh-CN HuiHui（MSI 随仓库附带，无需下载）。其他语言可用 `/help`、`/menu` 或 `locale` 参数选择；缺失的语言包才从 [tts-repair-win7-langpacks](https://github.com/wpstangzhiwei/tts-repair-win7-langpacks.git) 按需下载并缓存。
 3. **Windows 10 / 11 修复脚本已可用** — `platforms/windows/win10/tts-repair.bat`、`platforms/windows/win11/tts-repair.bat`  
    默认修复 zh-CN。自动探测系统版本号，本地无缓存时从 uupdump.net 下载对应的 TextToSpeech 能力 cab（SHA1 校验），用 `Add-WindowsCapability -LimitAccess` 离线安装并复检。
+   注意：Windows 11 使用与 Windows 10 相同的脚本。
 4. 其他平台后续扩展。
 
 ## 目录结构

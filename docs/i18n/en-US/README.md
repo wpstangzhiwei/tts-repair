@@ -13,6 +13,7 @@ Build a cross-platform text-to-speech (TTS) repair toolkit. All text documents a
    Default locale: zh-CN. Detects the OS build automatically, downloads the matching
    TextToSpeech capability cab from uupdump.net when not cached, installs it offline via
    `Add-WindowsCapability -LimitAccess`, and verifies the voice afterwards.
+   Note: Windows 11 uses the same script as Windows 10.
 4. Other platforms will follow later.
 
 ## Directory Layout

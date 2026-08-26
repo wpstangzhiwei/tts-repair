@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Repair a missing Windows 11 text-to-speech (TTS) voice. Windows ships TTS voices as
+Repair a missing Windows 11 text-to-speech (TTS) voice. This script uses the same implementation as the Windows 10 version. Windows ships TTS voices as
 `Language.TextToSpeech` capabilities (`Language.TextToSpeech~~~<locale>~0.0.1.0`); when a
 voice is missing this script installs the capability fully offline:
 

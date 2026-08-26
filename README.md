@@ -10,7 +10,7 @@ Cross-platform text-to-speech (TTS) repair toolkit. Documentation in [English](d
 |---|---|
 | **Windows 7** | `platforms/windows/win7/tts-repair.bat` — complete |
 | **Windows 10** | `platforms/windows/win10/tts-repair.bat` — complete |
-| **Windows 11** | `platforms/windows/win11/tts-repair.bat` — complete |
+| **Windows 11** | `platforms/windows/win11/tts-repair.bat` — complete (uses Win10 script) |
 | Linux / macOS | Planned |
 
 ## Quick Start (Windows 7)

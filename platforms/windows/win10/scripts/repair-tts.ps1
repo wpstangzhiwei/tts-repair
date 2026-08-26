@@ -1,6 +1,6 @@
 ﻿# Repair a missing Windows TTS voice (Language.TextToSpeech capability).
 # Flow: check -> resolve (local cache, then uupdump cab) -> install offline -> verify.
-# Compatible with Windows 10 / 11 Windows PowerShell 5.1.
+# Compatible with Windows PowerShell 5.1.
 
 param(
   [string]$Locale = "zh-CN",
@@ -41,7 +41,7 @@ $script:FallbackBuilds = @{
   "19042" = "19045"   # Win10 20H2 -> 22H2
   "19043" = "19045"   # Win10 21H1 -> 22H2
   "19044" = "19045"   # Win10 21H2 -> 22H2
-  "22621" = "22631"   # Win11 22H2 -> 23H2
+  "22621" = "22631"   # 22H2 -> 23H2
 }
 
 function Write-Log([string]$Message) {
@@ -332,8 +332,8 @@ function Get-VoiceTokens([string]$Locale) {
 
 $os = Get-OsInfo
 Write-Log "============================================================"
-if ($List) { Write-Log "Win10/11 TTS Repair - List" }
-else { Write-Log "Win10/11 TTS Repair - Check > Repair > Verify" }
+if ($List) { Write-Log "Win10 TTS Repair - List" }
+else { Write-Log "Win10 TTS Repair - Check > Repair > Verify" }
 Write-Log "============================================================"
 Write-Log "OS: build $($os.Build).$($os.Ubr) / $($os.Arch)"
 Write-Log "Target locale: $Locale"
@@ -466,7 +466,7 @@ foreach ($loc in $targets) {
 
 if ($verifyFail -eq 0 -and $failed -eq 0) {
   Write-Log ""
-  Write-Log "[SUCCESS] Win10/11 TTS repair completed."
+  Write-Log "[SUCCESS] Win10 TTS repair completed."
   exit 0
 }
 
