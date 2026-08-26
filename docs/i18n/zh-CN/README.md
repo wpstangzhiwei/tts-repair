@@ -11,7 +11,6 @@
    默认装 zh-CN HuiHui（MSI 随仓库附带，无需下载）。其他语言可用 `/help`、`/menu` 或 `locale` 参数选择；缺失的语言包才从 [tts-repair-win7-langpacks](https://github.com/wpstangzhiwei/tts-repair-win7-langpacks.git) 按需下载并缓存。
 3. **Windows 10 / 11 修复脚本已可用** — `platforms/windows/win10/tts-repair.bat`、`platforms/windows/win11/tts-repair.bat`  
    默认修复 zh-CN。自动探测系统版本号，本地无缓存时从 uupdump.net 下载对应的 TextToSpeech 能力 cab（SHA1 校验），用 `Add-WindowsCapability -LimitAccess` 离线安装并复检。
-   注意：Windows 11 使用与 Windows 10 相同的脚本。
 4. 其他平台后续扩展。
 
 ## 目录结构
@@ -42,12 +41,17 @@ platforms/windows/
 3. 需要已安装 **.NET Framework 4**（SAPI Unifier 依赖它）。
 4. 详细说明见 [Windows 7](docs/i18n/zh-CN/platforms/windows/win7/README.md)。
 
-## 快速使用（Windows 10 / 11）
+## 快速使用（Windows 10）
 
-1. 以管理员身份运行对应目录的 `tts-repair.bat`。
+1. 以管理员身份运行 `platforms/windows/win10/tts-repair.bat`。
 2. 默认修复 zh-CN TTS 声音；可用 `/help`、`/menu` 或直接传语言参数选择其他语言。
-3. 详细说明见 [Windows 10](docs/i18n/zh-CN/platforms/windows/win10/README.md) /
-   [Windows 11](docs/i18n/zh-CN/platforms/windows/win11/README.md)。
+3. 详细说明见 [Windows 10](docs/i18n/zh-CN/platforms/windows/win10/README.md)。
+
+## 快速使用（Windows 11）
+
+1. 以管理员身份运行 `platforms/windows/win11/tts-repair.bat`。
+2. 默认修复 zh-CN TTS 声音；可用 `/help`、`/menu` 或直接传语言参数选择其他语言。
+3. 详细说明见 [Windows 11](docs/i18n/zh-CN/platforms/windows/win11/README.md)。
 
 ## 许可证
 

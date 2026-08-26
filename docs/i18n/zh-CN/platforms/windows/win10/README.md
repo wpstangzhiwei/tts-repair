@@ -2,7 +2,7 @@
 
 ## 目的
 
-修复 Windows 10 上缺失的 TTS 声音。此脚本同样适用于 Windows 11。Windows 的 TTS 语音以
+修复 Windows 10 上缺失的 TTS 声音。Windows 的 TTS 语音以
 `Language.TextToSpeech` 能力（capability，如 `Language.TextToSpeech~~~zh-CN~0.0.1.0`）
 形式发布；脚本将其完整离线补齐：
 

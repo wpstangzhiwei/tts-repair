@@ -13,7 +13,6 @@ Build a cross-platform text-to-speech (TTS) repair toolkit. All text documents a
    Default locale: zh-CN. Detects the OS build automatically, downloads the matching
    TextToSpeech capability cab from uupdump.net when not cached, installs it offline via
    `Add-WindowsCapability -LimitAccess`, and verifies the voice afterwards.
-   Note: Windows 11 uses the same script as Windows 10.
 4. Other platforms will follow later.
 
 ## Directory Layout
@@ -44,12 +43,17 @@ platforms/windows/
 3. Requires **.NET Framework 4** (SAPI Unifier depends on it).
 4. Details: [Windows 7](docs/i18n/en-US/platforms/windows/win7/README.md).
 
-## Quick Start (Windows 10 / 11)
+## Quick Start (Windows 10)
 
-1. Run the matching `tts-repair.bat` **as Administrator**.
+1. Run `platforms/windows/win10/tts-repair.bat` **as Administrator**.
 2. Default repairs the zh-CN TTS voice; use `/help`, `/menu`, or pass a locale to choose another.
-3. Details: [Windows 10](docs/i18n/en-US/platforms/windows/win10/README.md) /
-   [Windows 11](docs/i18n/en-US/platforms/windows/win11/README.md).
+3. Details: [Windows 10](docs/i18n/en-US/platforms/windows/win10/README.md).
+
+## Quick Start (Windows 11)
+
+1. Run `platforms/windows/win11/tts-repair.bat` **as Administrator**.
+2. Default repairs the zh-CN TTS voice; use `/help`, `/menu`, or pass a locale to choose another.
+3. Details: [Windows 11](docs/i18n/en-US/platforms/windows/win11/README.md).
 
 ## License
 
