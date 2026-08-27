@@ -26,7 +26,8 @@ if ($name -eq "SpeechPlatformRuntime(x86).msi") {
   )
 } else {
   $urls = @(
-    ("https://download.microsoft.com/download/4/0/D/40D6347A-AFA5-417D-A9BB-173D937BEED4/" + $name)
+    ("https://download.microsoft.com/download/4/0/D/40D6347A-AFA5-417D-A9BB-173D937BEED4/" + $name),
+    ("https://web.archive.org/web/2023id_/https://download.microsoft.com/download/4/0/D/40D6347A-AFA5-417D-A9BB-173D937BEED4/" + $name)
   )
 }
 
@@ -45,7 +46,7 @@ function Test-MsiFile([string]$path) {
   }
 }
 
-function Download-File([string]$Url, [string]$OutFile, [int]$MaxRetries = 3) {
+function Download-File([string]$Url, [string]$OutFile, [int]$MaxRetries = 5) {
   for ($i = 1; $i -le $MaxRetries; $i++) {
     try {
       if (Test-Path -LiteralPath $OutFile) { Remove-Item -LiteralPath $OutFile -Force }
@@ -56,8 +57,8 @@ function Download-File([string]$Url, [string]$OutFile, [int]$MaxRetries = 3) {
     } catch {
       Write-Host ("  attempt $i failed: " + $_.Exception.Message)
       if ($i -lt $MaxRetries) {
-        Write-Host "  retrying in 3 seconds..."
-        Start-Sleep -Seconds 3
+        Write-Host "  retrying in 5 seconds..."
+        Start-Sleep -Seconds 5
       }
     }
   }
