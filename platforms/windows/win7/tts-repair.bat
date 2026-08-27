@@ -8,12 +8,10 @@ set "SCRIPT_DIR=%~dp0"
 set "RES_DIR=%SCRIPT_DIR%resources"
 set "LOG_DIR=%SCRIPT_DIR%logs"
 set "LANG_DIR=%RES_DIR%\Microsoft Speech Platform\Languages"
-set "LANGPACKS_DIR=%RES_DIR%\Microsoft Speech Platform\Langpacks"
-set "LANGPACKS_URL=https://raw.githubusercontent.com/wpstangzhiwei/tts-repair-win7-langpacks/main"
 set "CLOSE_UNIFIER_VBS=%SCRIPT_DIR%scripts\auto-close-sapi-unifier.vbs"
 set "DOWNLOAD_PS1=%SCRIPT_DIR%scripts\download-msi.ps1"
 set "MSI_CODE_VBS=%SCRIPT_DIR%scripts\msi-productcode.vbs"
-set "RUNTIME_MSI=%RES_DIR%\Microsoft Speech Platform\SpeechPlatformRuntime(x86).msi"
+set "RUNTIME_MSI=%LANG_DIR%\SpeechPlatformRuntime(x86).msi"
 set "UNIFIER_EXE=%RES_DIR%\SAPI_Unifier\SAPI_Unifier_requires_dot_NET_4.exe"
 set "RUNTIME_PRODUCT={22CB8ED7-DF57-4864-BD04-F63B9CE4B494}"
 
@@ -207,7 +205,6 @@ for /f "tokens=3" %%L in ('findstr /b /c:"rem @pack " "%~f0"') do (
     set "REST=!FN:MSSpeech_TTS_=!"
     set "MARK="
     if exist "%LANG_DIR%\%%L" set "MARK= [local]"
-    if not defined MARK if exist "%LANGPACKS_DIR%\%%L" set "MARK= [local]"
     if /I "%%L"=="MSSpeech_TTS_zh-CN_HuiHui.msi" set "MARK=!MARK! [default]"
     for /f "tokens=1* delims=_" %%A in ("!REST!") do echo   %%A  %%B!MARK!
   )
@@ -229,7 +226,6 @@ for /f "tokens=3" %%L in ('findstr /b /c:"rem @pack " "%~f0"') do (
     set /a MENU_N+=1
     set "MARK="
     if exist "%LANG_DIR%\%%L" set "MARK= [local]"
-    if not defined MARK if exist "%LANGPACKS_DIR%\%%L" set "MARK= [local]"
     if /I "%%L"=="MSSpeech_TTS_zh-CN_HuiHui.msi" set "MARK=!MARK! [default]"
     for /f "tokens=1* delims=_" %%A in ("!REST!") do (
       echo   !MENU_N!^) %%A  %%B!MARK!
@@ -347,15 +343,20 @@ if not exist "%DL_DEST%" (
   echo.
   echo Please download the file manually in a browser, then run this script again.
   echo.
-  echo   1. Download one of these URLs:
-  echo      https://cdn.jsdelivr.net/gh/wpstangzhiwei/tts-repair-win7-langpacks@main/%CACHE_NAME%
-  echo      %LANGPACKS_URL%/%CACHE_NAME%
-  echo      https://github.com/wpstangzhiwei/tts-repair-win7-langpacks/blob/main/%CACHE_NAME%
+  if "%CACHE_NAME%"=="SpeechPlatformRuntime(x86).msi" (
+    echo   Download URL:
+    echo     https://download.microsoft.com/download/A/6/4/A64012D6-D56F-4E58-85E3-531E56ABC0E6/x86_SpeechPlatformRuntime/SpeechPlatformRuntime.msi
+  ) else (
+    echo   The language packs are archived at:
+    echo     https://legacyupdate.net/download-center/download/27224/microsoft-speech-platform-runtime-languages-version-11
+    echo.
+    echo   Find "%CACHE_NAME%" in the list and download it.
+  )
   echo.
-  echo   2. Save it as this exact file name:
+  echo   Save it as this exact file name:
   echo      %CACHE_NAME%
   echo.
-  echo   3. Put it in this folder:
+  echo   Put it in this folder:
   echo      %LANG_DIR%
   echo.
   if exist "%LANG_DIR%" start "" explorer "%LANG_DIR%"
@@ -371,10 +372,6 @@ exit /b 0
 set "CACHE_PATH="
 if exist "%LANG_DIR%\%~1" (
   for %%I in ("%LANG_DIR%\%~1") do if not "%%~zI"=="0" set "CACHE_PATH=%LANG_DIR%\%~1"
-)
-if defined CACHE_PATH exit /b 0
-if exist "%LANGPACKS_DIR%\%~1" (
-  for %%I in ("%LANGPACKS_DIR%\%~1") do if not "%%~zI"=="0" set "CACHE_PATH=%LANGPACKS_DIR%\%~1"
 )
 exit /b 0
 
@@ -531,7 +528,7 @@ if defined REBOOT_REQUIRED echo [INFO] A reboot may be required before retrying.
 exit /b 1
 
 rem Microsoft Speech Platform Runtime Languages 11
-rem https://github.com/wpstangzhiwei/tts-repair-win7-langpacks
+rem https://legacyupdate.net/download-center/download/27224/microsoft-speech-platform-runtime-languages-version-11
 rem @pack MSSpeech_TTS_ca-ES_Herena.msi
 rem @pack MSSpeech_TTS_da-DK_Helle.msi
 rem @pack MSSpeech_TTS_de-DE_Hedda.msi

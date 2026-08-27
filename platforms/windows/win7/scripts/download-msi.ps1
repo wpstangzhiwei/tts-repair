@@ -1,4 +1,7 @@
-# Download one language MSI. Compatible with Windows 7 PowerShell 2.0.
+# Download one MSI. Compatible with Windows 7 PowerShell 2.0.
+# Sources:
+#   SpeechPlatformRuntime(x86).msi  -> Microsoft Download Center (still live)
+#   MSSpeech_TTS_*.msi              -> Microsoft Download Center (deleted; fallback to manual)
 $dest = $env:DL_DEST
 $name = $env:DL_NAME
 if (-not $dest -or -not $name) {
@@ -16,12 +19,15 @@ try {
   [Net.ServicePointManager]::ServerCertificateValidationCallback = { $true }
 } catch {}
 
-$urls = @(
-  ("https://raw.githubusercontent.com/wpstangzhiwei/tts-repair-win7-langpacks/main/" + $name),
-  ("https://media.githubusercontent.com/media/wpstangzhiwei/tts-repair-win7-langpacks/main/" + $name),
-  ("https://cdn.jsdelivr.net/gh/wpstangzhiwei/tts-repair-win7-langpacks@main/" + $name),
-  ("https://github.com/wpstangzhiwei/tts-repair-win7-langpacks/raw/main/" + $name)
-)
+if ($name -eq "SpeechPlatformRuntime(x86).msi") {
+  $urls = @(
+    "https://download.microsoft.com/download/A/6/4/A64012D6-D56F-4E58-85E3-531E56ABC0E6/x86_SpeechPlatformRuntime/SpeechPlatformRuntime.msi"
+  )
+} else {
+  $urls = @(
+    ("https://download.microsoft.com/download/4/0/D/40D6347A-AFA5-417D-A9BB-173D937BEED4/" + $name)
+  )
+}
 
 function Test-MsiFile([string]$path) {
   if (-not (Test-Path -LiteralPath $path)) { return $false }

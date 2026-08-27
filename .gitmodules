@@ -1,3 +1,0 @@
-[submodule "platforms/windows/win7/resources/Microsoft Speech Platform/Langpacks"]
-	path = platforms/windows/win7/resources/Microsoft Speech Platform/Langpacks
-	url = https://github.com/wpstangzhiwei/tts-repair-win7-langpacks.git
