@@ -9,8 +9,9 @@ if (-not $dest -or -not $name) {
   exit 1
 }
 
+# Enable strong crypto for TLS 1.2
 try {
-  [Net.ServicePointManager]::SecurityProtocol = [Enum]::ToObject([Net.SecurityProtocolType], 3072)
+  [Net.ServicePointManager]::SecurityProtocol =bor([Net.SecurityProtocolType]::Tls12 -bor [Net.SecurityProtocolType]::Tls11 -bor [Net.SecurityProtocolType]::Tls)
 } catch {}
 try {
   [Net.ServicePointManager]::CheckCertificateRevocationList = $false
@@ -44,6 +45,25 @@ function Test-MsiFile([string]$path) {
   }
 }
 
+function Download-File([string]$Url, [string]$OutFile, [int]$MaxRetries = 3) {
+  for ($i = 1; $i -le $MaxRetries; $i++) {
+    try {
+      if (Test-Path -LiteralPath $OutFile) { Remove-Item -LiteralPath $OutFile -Force }
+      $w = New-Object System.Net.WebClient
+      $w.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36")
+      $w.DownloadFile($Url, $OutFile)
+      return $true
+    } catch {
+      Write-Host ("  attempt $i failed: " + $_.Exception.Message)
+      if ($i -lt $MaxRetries) {
+        Write-Host "  retrying in 3 seconds..."
+        Start-Sleep -Seconds 3
+      }
+    }
+  }
+  return $false
+}
+
 $dir = Split-Path -Parent $dest
 if (-not (Test-Path -LiteralPath $dir)) {
   New-Item -ItemType Directory -Path $dir | Out-Null
@@ -52,11 +72,7 @@ if (-not (Test-Path -LiteralPath $dir)) {
 $partial = $dest + ".partial"
 foreach ($u in $urls) {
   Write-Host ("  try: " + $u)
-  try {
-    if (Test-Path -LiteralPath $partial) { Remove-Item -LiteralPath $partial -Force }
-    $w = New-Object System.Net.WebClient
-    $w.Headers.Add("User-Agent", "tts-repair")
-    $w.DownloadFile($u, $partial)
+  if (Download-File $u $partial) {
     if (Test-MsiFile $partial) {
       if (Test-Path -LiteralPath $dest) { Remove-Item -LiteralPath $dest -Force }
       Move-Item -LiteralPath $partial -Destination $dest
@@ -64,8 +80,6 @@ foreach ($u in $urls) {
       exit 0
     }
     Write-Host "  skip: response is not a valid MSI"
-  } catch {
-    Write-Host ("  fail: " + $_.Exception.Message)
   }
 }
 if (Test-Path -LiteralPath $partial) { Remove-Item -LiteralPath $partial -Force }
