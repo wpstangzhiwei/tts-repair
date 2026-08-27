@@ -26,14 +26,14 @@ tts-repair.bat /all
 - `/help`: show parameters and the available locale/voice list.  
 - `/list`: list TTS / SR packs; `[local]` means the MSI is already on disk; `[default]` is the bundled pack.  
 - `/menu`: interactive picker (enter a number, or `locale [voice] [tts|sr|all]`).  
-- No arguments: install `zh-CN` TTS (HuiHui). That MSI is bundled under `Languages/`, so **no download** is required.  
+- No arguments: install `zh-CN` TTS (HuiHui). The MSI is auto-downloaded from Microsoft on first run and cached under `Languages/`.  
 - `/lang locale` or `locale`: install all TTS voices for that locale (for example `en-US` installs Helen and ZiraPro).  
 - `locale VoiceName`: install one TTS voice.  
 - `locale sr`: install the recognizer pack only.  
 - `locale all`: TTS + SR.  
 - `/all`: install every pack in the catalog.  
 
-`MSSpeech_TTS_zh-CN_HuiHui.msi` is shipped in the main repo. Other language MSIs are not. The script resolves them in this order: local `Languages/` cache → local `Langpacks/` submodule → download from the Langpacks repo/mirrors into `Languages/`. GitHub raw links often fail on Windows 7 (TLS / certificate revocation), so the default Chinese pack is bundled.
+`MSSpeech_TTS_zh-CN_HuiHui.msi` is downloaded from Microsoft on first run. Other language MSIs are also downloaded from Microsoft. The script resolves them in this order: local `Languages/` cache → download from Microsoft into `Languages/`. All downloaded MSIs are cached locally.
 
 Installer logs are written to `platforms/windows/win7/logs/`.
 
@@ -41,8 +41,8 @@ Installer logs are written to `platforms/windows/win7/logs/`.
 
 The script handles these in order:
 
-1. Install or repair `resources/Microsoft Speech Platform/SpeechPlatformRuntime(x86).msi`  
-2. Resolve the selected language MSI: local `Languages/` (includes bundled zh-CN HuiHui) → local `Langpacks/` → download into `Languages/` only if needed  
+1. Install or repair `resources/Microsoft Speech Platform/SpeechPlatformRuntime(x86).msi` (downloaded from Microsoft)  
+2. Resolve the selected language MSI: local `Languages/` cache → download from Microsoft into `Languages/`  
 3. Install or repair the selected `MSSpeech_*.msi`  
 4. If SAPI mapping is missing for a selected TTS voice, run `resources/SAPI_Unifier/SAPI_Unifier_requires_dot_NET_4.exe`  
 
@@ -70,11 +70,9 @@ win7/
     download-msi.ps1
   resources/
     Microsoft Speech Platform/
-      SpeechPlatformRuntime(x86).msi
       Languages/
-        MSSpeech_TTS_zh-CN_HuiHui.msi   # bundled default
-        # other MSIs: download cache (gitignored)
-      Langpacks/                                # git submodule
+        MSSpeech_TTS_zh-CN_HuiHui.msi   # downloaded cache
+        # other MSIs: download cache
     SAPI_Unifier/
       SAPI_Unifier_requires_dot_NET_4.exe
 ```

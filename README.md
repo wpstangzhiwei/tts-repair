@@ -20,14 +20,14 @@ Cross-platform text-to-speech (TTS) repair toolkit. Documentation in [English](d
 platforms\windows\win7\tts-repair.bat
 ```
 
-- Default: installs **zh-CN HuiHui** TTS (MSI bundled, no download)
+- Default: installs **zh-CN HuiHui** TTS (auto-downloaded on first run, cached locally)
 - Use `/help`, `/menu`, or `locale [voice]` to select other languages
-- Missing packs auto-download from [tts-repair-win7-langpacks](https://github.com/wpstangzhiwei/tts-repair-win7-langpacks.git) and cache locally
+- Missing packs auto-download from Microsoft and cache locally
 
 ## What the Win7 Script Repairs
 
-1. **Microsoft Speech Platform Runtime** (`SpeechPlatformRuntime(x86).msi`)
-2. **Language packs** (TTS and/or SR) — resolves from local cache → submodule → download
+1. **Microsoft Speech Platform Runtime** (`SpeechPlatformRuntime(x86).msi`) — downloaded from Microsoft
+2. **Language packs** (TTS and/or SR) — resolved from local cache → download from Microsoft
 3. **SAPI mapping** — runs `SAPI_Unifier_requires_dot_NET_4.exe` (requires .NET Framework 4, **not** VC++ redist)
 
 ## Quick Start (Windows 10)

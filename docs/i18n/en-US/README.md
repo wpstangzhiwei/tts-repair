@@ -8,7 +8,7 @@ Build a cross-platform text-to-speech (TTS) repair toolkit. All text documents a
 
 1. **Windows first**
 2. **Windows 7 repair script is available** — `platforms/windows/win7/tts-repair.bat`  
-   Default locale: zh-CN HuiHui (MSI bundled, no download). Use `/help`, `/menu`, or `locale` argument to pick another language. Missing packs are fetched on demand from [tts-repair-win7-langpacks](https://github.com/wpstangzhiwei/tts-repair-win7-langpacks.git) and cached locally.
+   Default locale: zh-CN HuiHui (auto-downloaded on first run, cached locally). Use `/help`, `/menu`, or `locale` argument to pick another language. Missing packs are downloaded from Microsoft and cached locally.
 3. **Windows 10 / 11 repair scripts are available** — `platforms/windows/win10/tts-repair.bat`, `platforms/windows/win11/tts-repair.bat`  
    Default locale: zh-CN. Detects the OS build automatically, downloads the matching
    TextToSpeech capability cab from uupdump.net when not cached, installs it offline via
