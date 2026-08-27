@@ -439,10 +439,6 @@ if not exist "%RES_DIR%" (
   echo [ERROR] Resource directory not found: "%RES_DIR%"
   exit /b 1
 )
-if not exist "%RUNTIME_MSI%" (
-  echo [ERROR] Missing file: "%RUNTIME_MSI%"
-  exit /b 1
-)
 if not exist "%UNIFIER_EXE%" (
   echo [ERROR] Missing file: "%UNIFIER_EXE%"
   exit /b 1
@@ -472,6 +468,23 @@ call :query_product "%MSI_CODE%" MSI_PRODUCT
 if "%MSI_FUNC%"=="1" (
   echo - %MSI_NAME% already installed. Skip.
   exit /b 0
+)
+
+if not exist "%MSI_PATH%" (
+  echo [DOWNLOAD] %MSI_NAME%
+  set "DL_DEST=%MSI_PATH%"
+  set "DL_NAME=%~nx1"
+  if exist "%DOWNLOAD_PS1%" (
+    powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%DOWNLOAD_PS1%"
+  ) else (
+    echo [ERROR] Missing downloader: "%DOWNLOAD_PS1%"
+    exit /b 1
+  )
+  if not exist "%MSI_PATH%" (
+    echo [ERROR] Download failed: %MSI_NAME%
+    echo Please download manually and place in: "%LANG_DIR%"
+    exit /b 1
+  )
 )
 
 if "%MSI_PRODUCT%"=="1" (
