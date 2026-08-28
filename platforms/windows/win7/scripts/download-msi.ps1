@@ -11,7 +11,7 @@ if (-not $dest -or -not $name) {
 
 # Enable strong crypto for TLS 1.2
 try {
-  [Net.ServicePointManager]::SecurityProtocol =bor([Net.SecurityProtocolType]::Tls12 -bor [Net.SecurityProtocolType]::Tls11 -bor [Net.SecurityProtocolType]::Tls)
+  [Net.ServicePointManager]::SecurityProtocol = 3072
 } catch {}
 try {
   [Net.ServicePointManager]::CheckCertificateRevocationList = $false

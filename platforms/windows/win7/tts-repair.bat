@@ -474,7 +474,7 @@ set "DOTNET_URL=https://download.microsoft.com/download/5/6/4/5641DA81-E6FA-4550
 set "DOTNETInstaller=%TEMP%\dotNetFx40_Full_x86.exe"
 if not exist "%TEMP%" mkdir "%TEMP%"
 echo Downloading .NET Framework 4...
-powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "& {try {[Net.ServicePointManager]::SecurityProtocol =bor([Net.SecurityProtocolType]::Tls12 -bor [Net.SecurityProtocolType]::Tls11 -bor [Net.SecurityProtocolType]::Tls); $w = New-Object System.Net.WebClient; $w.Headers.Add('User-Agent', 'Mozilla/5.0'); $w.DownloadFile('%DOTNET_URL%', '%DOTNETInstaller%'); Write-Host 'Download complete.'} catch {Write-Host ('Download failed: ' + $_.Exception.Message); exit 1}}"
+powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "& {try {[Net.ServicePointManager]::SecurityProtocol = 3072; $w = New-Object System.Net.WebClient; $w.Headers.Add('User-Agent', 'Mozilla/5.0'); $w.DownloadFile('%DOTNET_URL%', '%DOTNETInstaller%'); Write-Host 'Download complete.'} catch {Write-Host ('Download failed: ' + $_.Exception.Message); exit 1}}"
 if not exist "%DOTNETInstaller%" (
   echo [ERROR] Failed to download .NET Framework 4 installer.
   echo Please download manually from: https://dotnet.microsoft.com/download/dotnet-framework/net48
