@@ -84,7 +84,11 @@ if "!NEED_UNIFIER!"=="1" (
     if /I "!SEL_KIND_%%I!"=="tts" if not "!SEL_SAPI_%%I!"=="1" set "ANY_SAPI_MISSING=1"
   )
   if "!ANY_SAPI_MISSING!"=="1" (
-    call :run_unifier "%UNIFIER_EXE%" || goto :fail
+    call :run_unifier "%UNIFIER_EXE%"
+    if not "!ERRORLEVEL!"=="0" (
+      echo [WARN] SAPI Unifier failed. SAPI mapping may be incomplete.
+      echo You can manually run SAPI Unifier later after installing .NET Framework 4.
+    )
   ) else (
     echo - SAPI Unifier mapping already present for selected TTS. Skip.
   )
@@ -110,7 +114,14 @@ if "!VERIFY_FAIL!"=="0" (
 
 echo.
 echo [ERROR] Repair finished but verification failed.
-echo Please review the logs above and run this script again as Administrator.
+call :detect_dotnet
+if not "!DOTNET_OK!"=="1" (
+  echo SAPI mapping failed because .NET Framework 4 is not installed.
+  echo Please install .NET Framework 4 from: https://dotnet.microsoft.com/download/dotnet-framework/net48
+  echo Then run this script again.
+) else (
+  echo Please review the logs above and run this script again as Administrator.
+)
 exit /b 1
 
 :parse_args
@@ -447,6 +458,46 @@ if not exist "%LANG_DIR%" mkdir "%LANG_DIR%" >nul 2>&1
 echo [OK] Required resource files are present.
 exit /b 0
 
+:detect_dotnet
+set "DOTNET_OK=0"
+reg query "HKLM\SOFTWARE\Microsoft\NET Framework Setup\NDP\v4\Full" /v Release >nul 2>&1
+if "%ERRORLEVEL%"=="0" set "DOTNET_OK=1"
+reg query "HKLM\SOFTWARE\Wow6432Node\Microsoft\NET Framework Setup\NDP\v4\Full" /v Release >nul 2>&1
+if "%ERRORLEVEL%"=="0" set "DOTNET_OK=1"
+exit /b 0
+
+:install_dotnet
+echo.
+echo [INSTALL] .NET Framework 4
+echo This may take a few minutes. Please wait...
+set "DOTNET_URL=https://download.microsoft.com/download/5/6/4/5641DA81-E6FA-4550-9F80-A1D862D9CFAA/dotNetFx40_Full_x86.exe"
+set "DOTNETInstaller=%TEMP%\dotNetFx40_Full_x86.exe"
+if not exist "%TEMP%" mkdir "%TEMP%"
+echo Downloading .NET Framework 4...
+powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "& {try {[Net.ServicePointManager]::SecurityProtocol =bor([Net.SecurityProtocolType]::Tls12 -bor [Net.SecurityProtocolType]::Tls11 -bor [Net.SecurityProtocolType]::Tls); $w = New-Object System.Net.WebClient; $w.Headers.Add('User-Agent', 'Mozilla/5.0'); $w.DownloadFile('%DOTNET_URL%', '%DOTNETInstaller%'); Write-Host 'Download complete.'} catch {Write-Host ('Download failed: ' + $_.Exception.Message); exit 1}}"
+if not exist "%DOTNETInstaller%" (
+  echo [ERROR] Failed to download .NET Framework 4 installer.
+  echo Please download manually from: https://dotnet.microsoft.com/download/dotnet-framework/net48
+  exit /b 1
+)
+echo Installing .NET Framework 4 (silent mode)...
+start "" /wait "%DOTNETInstaller%" /quiet /norestart
+set "RC=%ERRORLEVEL%"
+if "%RC%"=="0" (
+  echo [OK] .NET Framework 4 installed successfully.
+  set "DOTNET_OK=1"
+) else if "%RC%"=="3010" (
+  echo [WARN] .NET Framework 4 installed. A reboot is required.
+  set "REBOOT_REQUIRED=1"
+  set "DOTNET_OK=1"
+) else (
+  echo [ERROR] .NET Framework 4 installation failed with exit code: %RC%
+  echo Please install manually from: https://dotnet.microsoft.com/download/dotnet-framework/net48
+  exit /b 1
+)
+del "%DOTNETInstaller%" >nul 2>&1
+exit /b 0
+
 :print_item
 if "%~2"=="1" (
   echo - %~1: OK
@@ -515,13 +566,29 @@ echo [ERROR] MSI log: "%MSI_LOG%"
 exit /b 1
 
 :run_unifier
+call :detect_dotnet
+if not "!DOTNET_OK!"=="1" (
+  echo [INFO] .NET Framework 4 not detected. Installing automatically...
+  call :install_dotnet
+  if not "!DOTNET_OK!"=="1" (
+    echo [ERROR] .NET Framework 4 installation failed.
+    echo Please install manually from: https://dotnet.microsoft.com/download/dotnet-framework/net48
+    exit /b 1
+  )
+)
 echo [RUN] SAPI Unifier
 echo Launching: "%~1"
 echo The Unifier window will be closed automatically after mapping finishes.
 start "" wscript //nologo "%CLOSE_UNIFIER_VBS%"
 start "" /wait "%~1"
 set "RC=%ERRORLEVEL%"
-if not "%RC%"=="0" if not "%RC%"=="1" echo [WARN] SAPI Unifier exit code: %RC%
+if not "%RC%"=="0" if not "%RC%"=="1" (
+  echo [WARN] SAPI Unifier exit code: %RC%
+  if "%RC%"=="-2146232576" (
+    echo This error usually means .NET Framework 4 is not installed or corrupted.
+    echo Please install .NET Framework 4 from: https://dotnet.microsoft.com/download/dotnet-framework/net48
+  )
+)
 echo [OK] SAPI Unifier finished.
 exit /b 0
 
