@@ -474,7 +474,21 @@ set "DOTNET_URL=https://download.microsoft.com/download/5/6/4/5641DA81-E6FA-4550
 set "DOTNETInstaller=%TEMP%\dotNetFx40_Full_x86.exe"
 if not exist "%TEMP%" mkdir "%TEMP%"
 echo Downloading .NET Framework 4...
-powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "& {try {$protocol = [Net.ServicePointManager]::SecurityProtocol; [Net.ServicePointManager]::SecurityProtocol = [Enum]::ToObject($protocol.GetType(), ($protocol.value__ -bor 3072)); $w = New-Object System.Net.WebClient; $w.Headers.Add('User-Agent', 'Mozilla/5.0'); $w.DownloadFile('%DOTNET_URL%', '%DOTNETInstaller%'); Write-Host 'Download complete.'} catch {Write-Host ('Download failed: ' + $_.Exception.Message); exit 1}}"
+set "DL_PS1=%TEMP%\tts_download_dotnet.ps1"
+echo $protocol = [Net.ServicePointManager]::SecurityProtocol > "%DL_PS1%"
+echo [Net.ServicePointManager]::SecurityProtocol = [Enum]::ToObject($protocol.GetType(), ($protocol.value__ -bor 3072)) >> "%DL_PS1%"
+echo $w = New-Object System.Net.WebClient >> "%DL_PS1%"
+echo $w.Headers.Add('User-Agent', 'Mozilla/5.0') >> "%DL_PS1%"
+echo $w.DownloadFile('%DOTNET_URL%', '%DOTNETInstaller%') >> "%DL_PS1%"
+echo Write-Host 'Download complete.' >> "%DL_PS1%"
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%DL_PS1%"
+if errorlevel 1 (
+  del "%DL_PS1%" >nul 2>&1
+  echo [ERROR] Failed to download .NET Framework 4 installer.
+  echo Please download manually from: https://dotnet.microsoft.com/download/dotnet-framework/net48
+  exit /b 1
+)
+del "%DL_PS1%" >nul 2>&1
 if not exist "%DOTNETInstaller%" (
   echo [ERROR] Failed to download .NET Framework 4 installer.
   echo Please download manually from: https://dotnet.microsoft.com/download/dotnet-framework/net48
