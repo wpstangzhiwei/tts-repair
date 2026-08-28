@@ -89,3 +89,8 @@ tts-repair/
         ├── tts-repair.bat
         └── scripts/
 ```
+
+## Third-Party Components
+
+This project includes SAPI Unifier (GPL-3.0), developed by Mahmood Taghavi.
+Source: https://github.com/Mahmood-Taghavi/SAPI_Unifier

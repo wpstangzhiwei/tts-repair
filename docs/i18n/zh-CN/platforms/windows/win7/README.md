@@ -76,3 +76,8 @@ win7/
     SAPI_Unifier/
       SAPI_Unifier_requires_dot_NET_4.exe
 ```
+
+## 第三方组件
+
+本项目包含 SAPI Unifier（GPL-3.0），由 Mahmood Taghavi 开发。
+源码：https://github.com/Mahmood-Taghavi/SAPI_Unifier

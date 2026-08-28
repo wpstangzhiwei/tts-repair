@@ -76,3 +76,8 @@ win7/
     SAPI_Unifier/
       SAPI_Unifier_requires_dot_NET_4.exe
 ```
+
+## Third-Party Components
+
+This project includes SAPI Unifier (GPL-3.0), developed by Mahmood Taghavi.
+Source: https://github.com/Mahmood-Taghavi/SAPI_Unifier

@@ -59,6 +59,11 @@ platforms/windows/
 
 [GPL-3.0-only](../LICENSE). If you use, reference, and distribute a derived work, you must publish the corresponding source code under GPLv3.
 
+## Third-Party Components
+
+This project includes SAPI Unifier (GPL-3.0), developed by Mahmood Taghavi.
+Source: https://github.com/Mahmood-Taghavi/SAPI_Unifier
+
 ## Multilingual Rule
 
 - Document bodies live under `docs/i18n/<locale>/`.

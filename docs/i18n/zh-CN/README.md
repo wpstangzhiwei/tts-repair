@@ -58,6 +58,11 @@ platforms/windows/
 采用 [GPL-3.0-only](../LICENSE)。  
 使用、引用并发布衍生作品时，必须按 GPLv3 公开对应源代码。
 
+## 第三方组件
+
+本项目包含 SAPI Unifier（GPL-3.0），由 Mahmood Taghavi 开发。
+源码：https://github.com/Mahmood-Taghavi/SAPI_Unifier
+
 ## 技术细节
 
 - **静默 MSI 安装**（Win7）— `/quiet /norestart`
