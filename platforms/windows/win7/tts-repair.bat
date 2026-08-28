@@ -476,6 +476,7 @@ if not exist "%TEMP%" mkdir "%TEMP%"
 echo Downloading .NET Framework 4...
 set "DL_PS1=%TEMP%\tts_download_dotnet.ps1"
 echo [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12 > "%DL_PS1%"
+echo [Net.ServicePointManager]::ServerCertificateValidationCallback = { $true } >> "%DL_PS1%"
 echo $w = New-Object System.Net.WebClient >> "%DL_PS1%"
 echo $w.Headers.Add('User-Agent', 'Mozilla/5.0') >> "%DL_PS1%"
 echo $w.DownloadFile('%DOTNET_URL%', '%DOTNETInstaller%') >> "%DL_PS1%"
