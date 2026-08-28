@@ -10,9 +10,9 @@ if (-not $dest -or -not $name) {
 }
 
 # Enable strong crypto for TLS 1.2
-try {
-  [Net.ServicePointManager]::SecurityProtocol = 3072
-} catch {}
+  try {
+    [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor 3072
+  } catch {}
 try {
   [Net.ServicePointManager]::CheckCertificateRevocationList = $false
 } catch {}
