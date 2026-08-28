@@ -9,9 +9,10 @@ if (-not $dest -or -not $name) {
   exit 1
 }
 
-# Enable strong crypto for TLS 1.2
+# Enable strong crypto for TLS 1.2 (works on PS 2.0 / .NET 3.5)
   try {
-    [Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor 3072
+    $protocol = [Net.ServicePointManager]::SecurityProtocol
+    [Net.ServicePointManager]::SecurityProtocol = [Enum]::ToObject($protocol.GetType(), ($protocol.value__ -bor 3072))
   } catch {}
 try {
   [Net.ServicePointManager]::CheckCertificateRevocationList = $false
